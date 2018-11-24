@@ -1,5 +1,6 @@
 var config = require('./config');
 var mysql = require('promise-mysql');
+var connection;
 
 const mysqlConfig = {
   host     : config.db.host,
@@ -129,28 +130,27 @@ client.on("message", (message) => {
 function sub(raid, username, comment, message) {
 
 	mysql.createConnection(mysqlConfig).then(function(conn){
-		conn.query("DELETE FROM interest_list where raid = ? AND username = ?", [raid, username]);
-	}).then(function(){
-		mysql.createConnection(mysqlConfig).then(function(conn){
-			conn.query("INSERT into interest_list SET ?", {raid: raid, username: username, comment: comment, date_added: moment().format('YYYY-M-D')});
-		});
-	}).then(function(){
+		connection = conn;
+		return conn.query("DELETE FROM interest_list where raid = ? AND username = ?", [raid, username]);
+	}).then(function(results){
+		return connection.query("INSERT into interest_list SET ?", {raid: raid, username: username, comment: comment, date_added: moment().format('YYYY-M-D')});
+	}).then(function(results){
 		getInterestList(message);
 	});
 }
 
 function unSub(raid, username, message) {
 	mysql.createConnection(mysqlConfig).then(function(conn){
-		conn.query("DELETE FROM interest_list where raid = ? AND username = ?", [raid, username]);
-	}).then(function(){
+		return conn.query("DELETE FROM interest_list where raid = ? AND username = ?", [raid, username]);
+	}).then(function(results){
 		getInterestList(message);
 	});
 }
 
 function unSubAll(raid, message) {
 	mysql.createConnection(mysqlConfig).then(function(conn){
-		conn.query("DELETE FROM interest_list where raid = ?", [raid]);
-	}).then(function(){
+		return conn.query("DELETE FROM interest_list where raid = ?", [raid]);
+	}).then(function(results){
 		getInterestList(message);
 	});
 }
