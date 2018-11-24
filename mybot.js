@@ -181,6 +181,11 @@ function getInterestList(message) {
 
     var fields = [];
 
+    let richEmbed = new Discord.RichEmbed()
+      .setTitle("Looking 2 learn interest list")
+      .setColor("#DB9834")
+      .setDescription("");
+
     // Anybody in interest list?
     for ( var raid in l2lraids ) {
       if ( Object.keys(l2lraids[raid]).length > 0 ) {
@@ -190,11 +195,15 @@ function getInterestList(message) {
           name: raidNameMapping[raid] + " ("+Object.keys(l2lraids[raid]).length+")",
           value: '```'+raidColorMapping[raid]+'\n' + printUsernameRemarks( l2lraids[raid] ) + '```'
         });
+
+        richEmbed.addField(raidNameMapping[raid] + " ("+Object.keys(l2lraids[raid]).length+")", '```'+raidColorMapping[raid]+'\n' + printUsernameRemarks( l2lraids[raid] ) + '```', true);
       }
     }
 
     // Instructions fields
     fields.push(helpTxt)
+
+    richEmbed.addField(helpTxt.name, helpTxt.value);
 
     embed = {
       embed: {
@@ -205,7 +214,7 @@ function getInterestList(message) {
       }
     };
 
-    message.channel.send( embed );
+    message.channel.send( richEmbed );
   });
 }
 
@@ -236,7 +245,7 @@ function printUsernameRemarks( raid ) {
 
   for ( name in raid ) {
     txt += name;
-    txt += raid[name] ? " ( "+raid[name]+" )" : "";
+    txt += raid[name] ? " - "+raid[name]+"" : "";
     txt += "\n";
   }
 
