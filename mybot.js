@@ -1,3 +1,7 @@
+/******************************
+  Variables
+*******************************/
+
 var config = require('./config');
 var mysql = require('promise-mysql');
 var connection;
@@ -56,42 +60,65 @@ const adminTxt = {
   '```'
 }
 
+let isAdmin = false;
+
+const channelCategoryName = "Looking for group";
+const channelName= "looking_2_learn_raid"; // no spaces all lower case
+let channelID;
+let channel;
+let serverID; // also known as guild id
+
+/******************************
+  End Variables
+*******************************/
+
 client.on("ready", () => {
   console.log("I am ready!");
 });
 
 client.on("message", (message) => {
 
-  if (message.author.bot) return;
+  if ( message.author.bot )
+    return;
+
+  if ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") )
+    isAdmin = true;
+
+  serverID = message.guild.id;
+
+  channelCheck(message.guild);
 
   const args = message.content.slice(prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
-  if (command.toLowerCase() === "l2l") {
+  if ( command.toLowerCase() === "l2l" ) {
 
+    if( args[0] === 'clear' && isAdmin === true ) {
+        clear();
+        getInterestList();
+    }
     // Show list
-    // e.g. !l2l show
-    if( args[0] === 'show' || !args[0]) {
+    else if( args[0] === 'show' || !args[0]) {
       getInterestList(message);
     }
+    /*
     else if( args[0] == 'help' ) {
       getHelpText(message);
     }
+    */
     else {
       let raidInterested = smartInputDetect( args[0] );
-      //console.log( raidInterested );
       let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
 
       for ( var raidName in l2lraids ) {
-        if (raidInterested.toLowerCase() === raidName.toLowerCase()) {
-
+        if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
           /****************
               Mods Only Commands
           ****************/
           // Unsub User
           // e.g. !l2l levi remove xenodus
           if ( args[1] === 'remove') {
-            if( args[2] && ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") ) ) {
+            if( args[2] && isAdmin === true ) {
               if( args[2] === '*' )
                 unSubAll(raidName, message);
               else
@@ -101,7 +128,7 @@ client.on("message", (message) => {
           // Add User
           // e.g. !l2l levi add xenodus
           else if ( args[1] === 'add') {
-            if( args[2] && ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") ) ) {
+            if( args[2] && isAdmin === true ) {
               let remarks = args[3] ? args.slice(3, args.length).join(" ") : "";
 
               sub(raidName, args[2], remarks, message);
@@ -125,37 +152,72 @@ client.on("message", (message) => {
     }
   }
 
+  // Delete message after processed
+  message.delete();
 });
 
-function sub(raid, username, comment, message) {
+/******************************
+  Functions
+*******************************/
 
+async function clear() {
+    const fetched = await channel.fetchMessages({limit: 99});
+    channel.bulkDelete(fetched);
+}
+
+function channelCheck(guild) {
+  let channelCategoryExists = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category");
+  let channelCategoryID;
+
+  if( channelCategoryExists === null )
+    guild.createChannel(channelCategoryName, "category").then(function(newChannel){
+      channelCategoryID = newChannel.id;
+    });
+  else
+    channelCategoryID = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category").id;
+
+  let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
+
+  if( channelExists === null )
+    guild.createChannel(channelName, "text").then(function(newChannel){
+      newChannel.setParent( channelCategoryID );
+      channelID = newChannel.id;
+      channel = client.channels.get(channelID);
+    });
+  else {
+    channelID = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
+    channel = client.channels.get(channelID);
+  }
+}
+
+function sub(raid, username, comment, message) {
   mysql.createConnection(mysqlConfig).then(function(conn){
     connection = conn;
-    return conn.query("DELETE FROM interest_list where raid = ? AND username = ?", [raid, username]);
+    return conn.query("DELETE FROM interest_list where raid = ? AND username = ? AND server_id = ?", [raid, username, message.guild.id]);
   }).then(function(results){
-    return connection.query("INSERT into interest_list SET ?", {raid: raid, username: username, comment: comment, date_added: moment().format('YYYY-M-D')});
+    return connection.query("INSERT into interest_list SET ?", {raid: raid, username: username, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
   }).then(function(results){
-    getInterestList(message);
+    getInterestList();
   });
 }
 
 function unSub(raid, username, message) {
   mysql.createConnection(mysqlConfig).then(function(conn){
-    return conn.query("DELETE FROM interest_list where raid = ? AND username = ?", [raid, username]);
+    return conn.query("DELETE FROM interest_list where raid = ? AND username = ? AND server_id = ?", [raid, username, message.guild.id]);
   }).then(function(results){
-    getInterestList(message);
+    getInterestList();
   });
 }
 
 function unSubAll(raid, message) {
   mysql.createConnection(mysqlConfig).then(function(conn){
-    return conn.query("DELETE FROM interest_list where raid = ?", [raid]);
+    return conn.query("DELETE FROM interest_list where raid = ? AND server_id = ?", [raid, message.guild.id]);
   }).then(function(results){
-    getInterestList(message);
+    getInterestList();
   });
 }
 
-function getInterestList(message) {
+function getInterestList() {
 
   mysql.createConnection(mysqlConfig).then(function(conn){
     l2lraids = {
@@ -166,7 +228,7 @@ function getInterestList(message) {
     };
 
     // Last 2 weeks
-    return conn.query("SELECT * FROM interest_list where date_added >= '"+moment().subtract(2, 'weeks').format('YYYY-M-D')+"'");
+    return conn.query("SELECT * FROM interest_list WHERE server_id = ?", [serverID]);
   }).then(function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
@@ -214,30 +276,30 @@ function getInterestList(message) {
       }
     };
 
-    message.channel.send( richEmbed );
+    clear();
+    channel.send( richEmbed );
   });
 }
 
 function getHelpText(message) {
+  // Instructions fields
+  var fields = [];
+  fields.push(helpTxt)
 
-    // Instructions fields
-    var fields = [];
-    fields.push(helpTxt)
+  // Additional instructions for admins
+  if ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") ) {
+    fields.push(adminTxt);
+  }
 
-    // Additional instructions for admins
-    if ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") ) {
-      fields.push(adminTxt);
+  embed = {
+    embed: {
+      color: 3447003,
+      description: "",
+      fields: fields,
     }
+  };
 
-    embed = {
-      embed: {
-        color: 3447003,
-        description: "",
-        fields: fields,
-      }
-    };
-
-    message.channel.send( embed );
+  channel.send( embed );
 }
 
 function printUsernameRemarks( raid ) {
