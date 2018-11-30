@@ -20,11 +20,26 @@ let l2lraids = {
 const helpTxt = {
   name: 'Commands',
   value: '```' +
-  'Subscribe - !L2L levi/eow/sos/wish comments' +
-  '\nUnsubscribe - !L2L levi/eow/sos/wish unsub' +
-  '\nShow list - !L2L' +
+  'Subscribe - !l2l levi/eow/sos/wish comments' +
+  '\nUnsubscribe - !l2l levi/eow/sos/wish unsub' +
   '```'
 }
+
+const eventHelpTxt =
+  '```' +
+  'L2L Bot Event Commands\n------------------------\n' +
+  'Enter the commands in discord channel and NOT here.\n\n' +
+  'Create: !L2L event create "event name goes here" "event description goes here"\n' +
+  'e.g. !L2L event create "Last Wish 31 Dec 8PM" "Speed run"\n\n' +
+
+  'Delete: !L2L event delete event_id OR react with ❌ on the event\n' +
+  'e.g. !L2L event delete 5\n\n' +
+
+  'Edit: !L2L event edit event_id "event name goes here" "event description goes here"\n' +
+  'e.g. !L2L event edit 5 "Last Wish 31 Dec 8PM" "Petra run"\n\n' +
+
+  'Notify: React with 👋 on the event to ping all users that are signed up\n' +
+  '```';
 
 const adminTxt = {
   name: 'Admin Commands',
@@ -39,7 +54,7 @@ let isAdmin = false;
 
 // Channels
 const channelCategoryName = "Looking for group";
-const channelName = "looking_2_learn_raid"; // no spaces all lower case
+const channelName = "raid_learning_interest_list"; // no spaces all lower case
 const eventChannelName = "raid_events"; // no spaces all lower case
 let channelID;
 let eventChannelID;
@@ -53,9 +68,12 @@ let serverID; // also known as guild id
 
 client.on("ready", () => {
   console.log("I am ready!");
+  updateAllServers();
 });
 
 client.on('messageReactionAdd', (reaction, user) => {
+
+  if ( reaction.message.guild === null ) return; // Disallow DM
 
   serverID = reaction.message.guild.id;
 
@@ -81,6 +99,14 @@ client.on('messageReactionAdd', (reaction, user) => {
         if(reaction.emoji.name === "⛔") {
           unSubEvent(eventID, user);
         }
+
+        if(reaction.emoji.name === "❌") {
+          deleteEvent(eventID, user);
+        }
+
+        if(reaction.emoji.name === "👋") {
+          pingEventSignups(eventID);
+        }
       }
     }
 });
@@ -88,9 +114,9 @@ client.on('messageReactionAdd', (reaction, user) => {
 client.on("message", (message) => {
 
   if ( message.author.bot ) return;
+  if ( message.guild === null ) return; // Disallow DM
 
-  if ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") )
-    isAdmin = true;
+  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods")) ? true : false;
 
   serverID = message.guild.id;
 
@@ -153,15 +179,16 @@ client.on("message", (message) => {
 
             break;
 
-          // !l2l event delete eventID
-          // Only can delete if event is created by message author or user is admin
+          // Restricted to message author or admin
           case "delete":
             if ( args.length > 2 ) {
               let eventID = args[2];
               deleteEvent(eventID, message.author);
             }
+
             break;
 
+          // Restricted to message author or admin
           case "edit":
             if ( args.length > 3 ) {
               eventID = args[2];
@@ -203,6 +230,29 @@ client.on("message", (message) => {
             }
             break;
 
+          // Alternative command to sign up
+          case "sub":
+            if ( args.length > 2 ) {
+              let eventID = args[2];
+              joinEvent(eventID, message.author, "confirmed");
+            }
+
+            break;
+
+          // Alternative command to sign up
+          case "unsub":
+            if ( args.length > 2 ) {
+              let eventID = args[2];
+              unSubEvent(eventID, message.author);
+            }
+
+            break;
+
+          // Alternative command to sign up
+          case "help":
+            message.author.sendMessage(eventHelpTxt);
+            break;
+
           default:
             clear(eventChannel);
             getEvents();
@@ -220,11 +270,21 @@ client.on("message", (message) => {
       case 'clear':
         if ( isAdmin ) {
           clear(channel);
+          clear(eventChannel);
           getInterestList();
+          getEvents();
         }
         break;
 
-      // Interest list subscribe / unsubscribe
+      /***************************
+            Interest List Commands
+      ****************************
+      -> raid_name comment | e.g. !l2l levi free after 10
+      -> raid_name unsub | e.g. !l2l levi unsub
+      -> raid_name add user_name comment | !l2l levi add xenodus noob
+      -> raid_name unsub user_name | !l2l levi unsub xenodus
+      **************************/
+
       default:
         let raidInterested = smartInputDetect( args[0] );
         let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
@@ -233,7 +293,7 @@ client.on("message", (message) => {
           if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
             switch ( args[1] ) {
               /********************************
-                      Mods Only Commands
+                          Mods Only
               ********************************/
               case "remove":
                 if( args[2] && isAdmin === true ) {
@@ -275,8 +335,9 @@ client.on("message", (message) => {
     }
   }
 
-  // Delete message after processed
-  message.delete();
+  // Delete message after processed to keep channels clean
+  if ( message.channel === eventChannel || message.channel === channel )
+    message.delete();
 });
 
 /******************************
@@ -286,6 +347,17 @@ client.on("message", (message) => {
 async function clear(channel) {
     const fetched = await channel.fetchMessages({limit: 99});
     channel.bulkDelete(fetched);
+}
+
+function updateAllServers() {
+  for( var guild of client.guilds.values() ) {
+    serverID = guild.id;
+    channelCheck(guild);
+    clear(channel);
+    clear(eventChannel);
+    getInterestList();
+    getEvents();
+  }
 }
 
 function unSubEvent(eventID, player) {
@@ -307,6 +379,7 @@ function joinEvent(eventID, player, type) {
   }).then(function(results){
     clear(eventChannel);
     getEvents();
+    signupAlert(eventID, player, type);
   });
 }
 
@@ -346,15 +419,18 @@ function getEvents() {
         if ( confirmed === "" ) confirmed = "nil";
         if ( reserve === "" ) reserve = "nil";
 
-        // Event signups - Yes / Reserve
-        var richEmbed = new Discord.RichEmbed()
-          .setTitle( event.event_name + " | Event ID: " + event.event_id )
-          .setColor("#DB9834")
-          .setDescription( event.event_description );
+        var author = client.fetchUser(event.created_by).then(function(author){
 
-        richEmbed.addField("Confirmed", confirmed, true);
-        richEmbed.addField("Reserve", reserve, true);
-        eventChannel.send( richEmbed );
+          // "Event ID" string used in detection of reaction
+          var richEmbed = new Discord.RichEmbed()
+            .setTitle( event.event_name + " | Event ID: " + event.event_id )
+            .setColor("#DB9834")
+            .setDescription( event.event_description );
+
+          richEmbed.addField("Confirmed", confirmed, true);
+          richEmbed.addField("Reserve", reserve, true);
+          eventChannel.send( richEmbed );
+        });
       });
     }
     return;
@@ -362,11 +438,55 @@ function getEvents() {
       var richEmbed = new Discord.RichEmbed()
         .setTitle("Instructions")
         .setColor("#DB9834")
-        .setDescription(":ok: to confirm :thinking: to reserve :no_entry: to remove");
+        .setDescription("Sign up to raids by reacting :ok: to __confirm__ :thinking: to __reserve__ :no_entry: to __remove__ (self)");
 
-      richEmbed.addField("Commands", "!l2l event help", true);
+      richEmbed.addField("Commands", '!l2l event help\n!l2l event create "event_name" "event description"', true);
 
     eventChannel.send( richEmbed );
+  });
+}
+
+function signupAlert(eventID, signup, type) {
+  mysql.createConnection(config.mysqlConfig).then(function(conn){
+    connection = conn;
+    return conn.query("SELECT * FROM event WHERE event_id = ?", [eventID]);
+  }).then(function(results){
+    var rows = JSON.parse(JSON.stringify(results));
+
+    if( rows[0].created_by ) {
+      let event_name = rows[0].event_name;
+      let creator_id = rows[0].created_by;
+
+      client.fetchUser(creator_id).then(function(creator){
+        creator.sendMessage(signup.username + " has signed up for your event, __" + event_name + "__ as " + type + ".");
+      });
+    }
+  });
+}
+
+function pingEventSignups(eventID) {
+  mysql.createConnection(config.mysqlConfig).then(function(conn){
+    connection = conn;
+    return conn.query("SELECT * FROM event_signup LEFT JOIN event ON event_signup.event_id = event.event_id WHERE event_signup.event_id = ?", [eventID]);
+  }).then(function(results){
+    var rows = JSON.parse(JSON.stringify(results));
+
+    // For each sign up users
+    for(var i = 0; i < rows.length; i++) {
+      if( rows[i].created_by && rows[i].user_id ) {
+        let creator_id = rows[i].created_by;
+        let signup_id = rows[i].user_id;
+        let event_name = rows[i].event_name;
+
+        client.fetchUser(creator_id).then(function(creator){
+          return creator;
+        }).then(function(creator){
+          client.fetchUser(signup_id).then(function(signup){
+            signup.sendMessage("This is an alert by " + creator + " or an admin regarding event, __" + event_name + "__");
+          });
+        });
+      }
+    }
   });
 }
 
@@ -521,9 +641,9 @@ function getInterestList() {
     var fields = [];
 
     let richEmbed = new Discord.RichEmbed()
-      .setTitle("Looking 2 learn interest list")
+      .setTitle("Teaching Raid LFG")
       .setColor("#DB9834")
-      .setDescription("");
+      .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learning.");
 
     // Anybody in interest list?
     for ( var raid in l2lraids ) {
@@ -547,8 +667,8 @@ function getInterestList() {
     embed = {
       embed: {
         color: 3447003,
-        title: "Looking 2 learn interest list",
-        description: "",
+        title: "Teaching Raid LFG",
+        description: "Subscribe to let mods / sherpas know when and what raids you're interested to learning.",
         fields: fields,
       }
     };
@@ -556,27 +676,6 @@ function getInterestList() {
     clear(channel);
     channel.send( richEmbed );
   });
-}
-
-function getHelpText(message) {
-  // Instructions fields
-  var fields = [];
-  fields.push(helpTxt)
-
-  // Additional instructions for admins
-  if ( message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") ) {
-    fields.push(adminTxt);
-  }
-
-  embed = {
-    embed: {
-      color: 3447003,
-      description: "",
-      fields: fields,
-    }
-  };
-
-  channel.send( embed );
 }
 
 function printUsernameRemarks( raid ) {
