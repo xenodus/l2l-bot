@@ -239,7 +239,7 @@ client.on("message", (message) => {
 
             break;
 
-          // Alternative command to sign up
+          // Alternative command to unsub
           case "unsub":
             if ( args.length > 2 ) {
               let eventID = args[2];
@@ -248,7 +248,6 @@ client.on("message", (message) => {
 
             break;
 
-          // Alternative command to sign up
           case "help":
             message.author.sendMessage(eventHelpTxt);
             break;
