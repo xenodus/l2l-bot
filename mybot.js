@@ -286,7 +286,7 @@ client.on("message", (message) => {
             break;
 
           case "help":
-            message.author.sendMessage(eventHelpTxt);
+            message.author.send(eventHelpTxt);
             break;
 
           default:
@@ -547,7 +547,7 @@ function signupAlert(eventID, signup, type) {
       let creator_id = rows[0].created_by;
 
       client.fetchUser(creator_id).then(function(creator){
-        creator.sendMessage(signup.username + " has signed up for your event, __" + event_name + "__ as " + type + ".");
+        creator.send(signup.username + " has signed up for your event, __" + event_name + "__ as " + type + ".");
       });
     }
   });
@@ -571,7 +571,7 @@ function pingEventSignups(eventID) {
           return creator;
         }).then(function(creator){
           client.fetchUser(signup_id).then(function(signup){
-            signup.sendMessage("This is an alert by " + creator + " or an admin regarding event, __" + event_name + "__");
+            signup.send("This is an alert by " + creator + " or an admin regarding event, __" + event_name + "__");
           });
         });
       }
