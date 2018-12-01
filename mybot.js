@@ -34,9 +34,17 @@ const eventHelpTxt =
 
   'Delete: !L2L event delete event_id OR react with ❌ on the event\n' +
   'e.g. !L2L event delete 5\n\n' +
+  'Warning: deletion is irreversible\n\n' +
 
   'Edit: !L2L event edit event_id "event name goes here" "event description goes here"\n' +
   'e.g. !L2L event edit 5 "Last Wish 31 Dec 8PM" "Petra run"\n\n' +
+
+  'Add player to event: !L2L event add event_id @player\n' +
+  'e.g. !L2L event add 5 @player\n' +
+  'e.g. !L2L event add 5 @player reserve\n\n' +
+
+  'Remove player from event: !L2L event remove event_id @player\n' +
+  'e.g. !L2L event remove 5 @player\n\n' +
 
   'Notify: React with 👋 on the event to ping all users that are signed up\n' +
   '```';
@@ -74,6 +82,7 @@ client.on("ready", () => {
 client.on('messageReactionAdd', (reaction, user) => {
 
   if ( reaction.message.guild === null ) return; // Disallow DM
+  if ( user.bot ) return;
 
   serverID = reaction.message.guild.id;
 
@@ -230,6 +239,34 @@ client.on("message", (message) => {
             }
             break;
 
+          // Add users to events !l2l event add event_id @user confirmed|reserve
+          case "add":
+            if ( args.length > 2 ) {
+              let eventID = args[2];
+              let player = message.mentions.users.first();
+              let type = args[4] ? args[4] : "";
+              type = (type == "reserve") ? "reserve" : "confirmed";
+
+              if( eventID && player ) {
+                add2Event(eventID, type, message.author, player);
+              }
+            }
+
+            break;
+
+          // Add users to events !l2l event remove event_id @user
+          case "remove":
+            if ( args.length > 2 ) {
+              let eventID = args[2];
+              let player = message.mentions.users.first();
+
+              if( eventID && player ) {
+                removeFromEvent(eventID, message.author, player);
+              }
+            }
+
+            break;
+
           // Alternative command to sign up
           case "sub":
             if ( args.length > 2 ) {
@@ -343,10 +380,25 @@ client.on("message", (message) => {
   Functions
 *******************************/
 
+function clear(channel, limit = 100) {
+  return channel.fetchMessages({limit}).then(collected => {
+    if (collected.size > 0) {
+      channel.bulkDelete(collected, true);
+    }
+  });
+}
+
+/*
 async function clear(channel) {
+  try{
     const fetched = await channel.fetchMessages({limit: 99});
     channel.bulkDelete(fetched);
+  }
+  catch(e) {
+    return;
+  }
 }
+*/
 
 function updateAllServers() {
   for( var guild of client.guilds.values() ) {
@@ -369,12 +421,45 @@ function unSubEvent(eventID, player) {
   });
 }
 
-function joinEvent(eventID, player, type) {
+function removeFromEvent(eventID, user, player) {
+  mysql.createConnection(config.mysqlConfig).then(function(conn){
+    connection = conn;
+    return conn.query("SELECT * FROM event WHERE event_id = ? ", [eventID]);
+  }).then(function(results){
+    var rows = JSON.parse(JSON.stringify(results));
+
+    if( rows[0].created_by == user.id || isAdmin ) {
+      unSubEvent(eventID, player);
+    }
+
+    return;
+  });
+}
+
+function add2Event(eventID, type, user, player) {
+  mysql.createConnection(config.mysqlConfig).then(function(conn){
+    connection = conn;
+    return conn.query("SELECT * FROM event WHERE event_id = ? ", [eventID]);
+  }).then(function(results){
+    var rows = JSON.parse(JSON.stringify(results));
+
+    if( rows[0].created_by == user.id || isAdmin ) {
+      joinEvent(eventID, player, type, user);
+    }
+
+    return;
+  });
+}
+
+function joinEvent(eventID, player, type, addedByUser) {
   mysql.createConnection(config.mysqlConfig).then(function(conn){
     connection = conn;
     return conn.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id]);
   }).then(function(results){
-    return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: player.username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
+    if ( addedByUser )
+      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: player.username, user_id: player.id, type: type, added_by_user_id: addedByUser.id, added_by_username: addedByUser.username, date_added: moment().format('YYYY-M-D H:m:s')});
+    else
+      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: player.username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
   }).then(function(results){
     clear(eventChannel);
     getEvents();
@@ -428,7 +513,12 @@ function getEvents() {
 
           richEmbed.addField("Confirmed", confirmed, true);
           richEmbed.addField("Reserve", reserve, true);
-          eventChannel.send( richEmbed );
+          eventChannel.send( richEmbed ).then(async function(message){
+            await message.react('🆗');
+            await message.react('🤔');
+            await message.react('⛔');
+            return;
+          });
         });
       });
     }
@@ -642,7 +732,7 @@ function getInterestList() {
     let richEmbed = new Discord.RichEmbed()
       .setTitle("Teaching Raid LFG")
       .setColor("#DB9834")
-      .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learning.");
+      .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learn.");
 
     // Anybody in interest list?
     for ( var raid in l2lraids ) {
@@ -667,7 +757,7 @@ function getInterestList() {
       embed: {
         color: 3447003,
         title: "Teaching Raid LFG",
-        description: "Subscribe to let mods / sherpas know when and what raids you're interested to learning.",
+        description: "Subscribe to let mods / sherpas know when and what raids you're interested to learn.",
         fields: fields,
       }
     };
