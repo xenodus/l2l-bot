@@ -6,6 +6,10 @@ var config = require('./config');
 var mysql = require('promise-mysql');
 var connection = mysql.createConnection(config.mysqlConfig);
 
+setInterval(function () {
+    connection.query('SELECT 1');
+}, 5000);
+
 const moment = require("moment");
 const Discord = require("discord.js");
 const client = new Discord.Client();
@@ -38,6 +42,9 @@ const eventHelpTxt =
 
   'Edit: !L2L event edit event_id "event name goes here" "event description goes here"\n' +
   'e.g. !L2L event edit 5 "Last Wish 31 Dec 8PM" "Petra run"\n\n' +
+
+  'Add/Edit Comment: !L2L event comment event_id "comment"\n' +
+  'e.g. !L2L event comment 5 "First timer here!"\n\n' +
 
   'Add player to event: !L2L event add event_id @player\n' +
   'e.g. !L2L event add 5 @player\n' +
@@ -125,7 +132,7 @@ client.on("message", (message) => {
   if ( message.author.bot ) return;
   if ( message.guild === null ) return; // Disallow DM
 
-  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods")) ? true : false;
+  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.id == "198636356623269888") ? true : false;
 
   serverID = message.guild.id;
 
@@ -262,6 +269,21 @@ client.on("message", (message) => {
 
               if( eventID && player ) {
                 removeFromEvent(eventID, message.author, player);
+              }
+            }
+
+            break;
+
+          // Add users to add comments to sign up
+          // !l2l event comment 5 Petra's run maybe?
+          case "comment":
+            if ( args.length > 2 ) {
+              let eventID = args[2];
+              let player = message.author;
+              let comment =  args.slice(3, args.length).join(" ") ? args.slice(3, args.length).join(" ") : "";
+
+              if( eventID ) {
+                updateEventAddComment( eventID, player, comment );
               }
             }
 
@@ -436,6 +458,16 @@ function removeFromEvent(eventID, user, player) {
   });
 }
 
+function updateEventAddComment(eventID, user, comment) {
+  mysql.createConnection(config.mysqlConfig).then(function(conn){
+    connection = conn;
+    return conn.query("UPDATE event_signup SET comment = ? WHERE event_id = ? AND user_id = ?", [comment, eventID, user.id]);
+  }).then(function(results){
+    clear(eventChannel);
+    getEvents();
+  });
+}
+
 function add2Event(eventID, type, user, player) {
   mysql.createConnection(config.mysqlConfig).then(function(conn){
     connection = conn;
@@ -491,11 +523,11 @@ function getEvents() {
 
         for(var i = 0; i < signupsRows.length; i++) {
           if( signupsRows[i].type == 'confirmed' ) {
-            confirmed += confirmedCount + ". " + signupsRows[i].username + "\n";
+            confirmed += confirmedCount + ". " + signupsRows[i].username + ( signupsRows[i].comment ? ("\n- _" + signupsRows[i].comment + "_"):"" ) + "\n";
             confirmedCount++;
           }
           else {
-            reserve += reserveCount + ". " + signupsRows[i].username + "\n";
+            reserve += reserveCount + ". " + signupsRows[i].username + ( signupsRows[i].comment ? ("\n- _" + signupsRows[i].comment + "_"):"" ) +"\n";
             reserveCount++;
           }
         }
@@ -529,7 +561,7 @@ function getEvents() {
         .setColor("#DB9834")
         .setDescription("Sign up to raids by reacting :ok: to __confirm__ :thinking: to __reserve__ :no_entry: to __remove__ (self)");
 
-      richEmbed.addField("Commands", '!l2l event help\n!l2l event create "event_name" "event description"', true);
+      richEmbed.addField("Quick Commands", 'Full command list: !l2l event help\nCreate event: !l2l event create "event_name" "event description"\nAdd comment: !l2l event comment event_id "comment"', true);
 
     eventChannel.send( richEmbed );
   });
@@ -595,7 +627,6 @@ function deleteEvent(eventID, player) {
       return connection.query("DELETE FROM event WHERE event_id = ?", [eventID]);
     }
 
-    connection.end();
   }).then(function(){
     clear(eventChannel);
     getEvents();
@@ -617,7 +648,6 @@ function updateEvent(player, eventID, eventName, eventDescription) {
       return connection.query("UPDATE event SET event_name = ?, event_description = ? WHERE event_id = ?", [eventName, eventDescription, eventID]);
     }
 
-    connection.end();
   }).then(function(){
     clear(eventChannel);
     getEvents();
