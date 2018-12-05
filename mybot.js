@@ -18,14 +18,15 @@ let l2lraids = {
   'Levi': [],
   'EoW': [],
   'SoS': [],
-  'Wish': []
+  'Wish': [],
+  'Scourge': []
 };
 
 const helpTxt = {
   name: 'Commands',
   value: '```' +
-  'Subscribe - !l2l levi/eow/sos/wish comments' +
-  '\nUnsubscribe - !l2l levi/eow/sos/wish unsub' +
+  'Subscribe - !l2l levi/eow/sos/wish/scourge comments' +
+  '\nUnsubscribe - !l2l levi/eow/sos/wish/scourge unsub' +
   '```'
 }
 
@@ -741,7 +742,8 @@ function getInterestList() {
       'Levi': [],
       'EoW': [],
       'SoS': [],
-      'Wish': []
+      'Wish': [],
+      'Scourge': []
     };
 
     return conn.query("SELECT * FROM interest_list WHERE server_id = ?", [serverID]);
@@ -815,6 +817,7 @@ function smartInputDetect(raidName) {
   var eowMatches = ['eow', 'eater'];
   var sosMatches = ['sos', 'spires', 'stars'];
   var wishMatches = ['wish', 'last', 'riven'];
+  var scourgeMatches = ['scourge', 'scorge', 'scourge of the past', 'past'];
 
   if( leviMatches.includes(raidName.toLowerCase()) )
     return 'Levi'
@@ -824,6 +827,8 @@ function smartInputDetect(raidName) {
     return 'SoS'
   else if( wishMatches.includes(raidName.toLowerCase()) )
     return 'Wish'
+  else if( scourgeMatches.includes(raidName.toLowerCase()) )
+    return 'Scourge'
   else return 'dadaffsdfsdgsdg';
 }
 
