@@ -6,15 +6,11 @@ var config = require('./config');
 var mysql = require('promise-mysql');
 var connection = mysql.createConnection(config.mysqlConfig);
 
-setInterval(function () {
-    connection.query('SELECT 1');
-}, 5000);
-
 const moment = require("moment");
 const Discord = require("discord.js");
 const client = new Discord.Client();
 
-let l2lraids = {
+let raids = {
   'Levi': [],
   'EoW': [],
   'SoS': [],
@@ -24,54 +20,48 @@ let l2lraids = {
 
 const helpTxt = {
   name: 'Commands',
-  value: '```' +
-  'Subscribe - !l2l levi/eow/sos/wish/scourge comments' +
-  '\nUnsubscribe - !l2l levi/eow/sos/wish/scourge unsub' +
+  value:   '```' +
+  'Subscribe - !sub levi/eow/sos/wish/scourge comments\n' +
+  'Unsubscribe - !unsub levi/eow/sos/wish/scourge\n\n' +
+  'Add user - !add levi @xenodus\n' +
+  'Remove user - !remove levi @xenodus' +
   '```'
 }
 
 const eventHelpTxt =
   '```' +
-  'L2L Bot Event Commands\n------------------------\n' +
+  'SG-E Bot Event Commands\n------------------------\n' +
   'Enter the commands in discord channel and NOT here.\n\n' +
-  'Create: !L2L event create "event name goes here" "event description goes here"\n' +
-  'e.g. !L2L event create "Last Wish 31 Dec 8PM" "Speed run"\n\n' +
+  'Create: !event create "event name goes here" "event description goes here"\n' +
+  'e.g. !event create "Last Wish 31 Dec 8PM" "Speed run"\n\n' +
 
-  'Delete: !L2L event delete event_id OR react with ❌ on the event\n' +
-  'e.g. !L2L event delete 5\n\n' +
-  'Warning: deletion is irreversible\n\n' +
+  'Delete: !event delete event_id OR react with ❌ on the event\n' +
+  'e.g. !event delete 5\n\n' +
 
-  'Edit: !L2L event edit event_id "event name goes here" "event description goes here"\n' +
-  'e.g. !L2L event edit 5 "Last Wish 31 Dec 8PM" "Petra run"\n\n' +
+  'Edit: !event edit event_id "event name goes here" "event description goes here"\n' +
+  'e.g. !event edit 5 "Last Wish 31 Dec 8PM" "Petra run"\n\n' +
+
+  'Notify: React with 👋 on the event to ping all users that are signed up\n\n' +
 
   'Add/Edit Comment: !L2L event comment event_id "comment"\n' +
-  'e.g. !L2L event comment 5 "First timer here!"\n\n' +
+  'e.g. !event comment 5 "First timer here!"\n\n' +
 
-  'Add player to event: !L2L event add event_id @player\n' +
-  'e.g. !L2L event add 5 @player\n' +
-  'e.g. !L2L event add 5 @player reserve\n\n' +
+  '** Add player to event: !L2L event add event_id @player\n' +
+  'e.g. !event add 5 @player\n' +
+  'e.g. !event add 5 @player reserve\n\n' +
 
-  'Remove player from event: !L2L event remove event_id @player\n' +
-  'e.g. !L2L event remove 5 @player\n\n' +
+  '** Remove player from event: !L2L event remove event_id @player\n' +
+  'e.g. !event remove 5 @player\n\n' +
 
-  'Notify: React with 👋 on the event to ping all users that are signed up\n' +
+  '** Only applicable for admins, mods and event creator' +
   '```';
-
-const adminTxt = {
-  name: 'Admin Commands',
-  value: '```' +
-  'Sub. User - !L2L levi add Username' +
-  '\nUnsub. User - !L2L levi remove Username' +
-  '\nUnsub. all users from a raid - !L2L levi remove *' +
-  '```'
-}
 
 let isAdmin = false;
 
 // Channels
 const channelCategoryName = "Looking for group";
-const channelName = "raid_learning_interest_list"; // no spaces all lower case
-const eventChannelName = "raid_events"; // no spaces all lower case
+const channelName = "raid_newbies_signup"; // no spaces all lower case
+const eventChannelName = "raid_lfg_test"; // no spaces all lower case
 let channelID;
 let eventChannelID;
 let channel;
@@ -85,6 +75,12 @@ let serverID; // also known as guild id
 client.on("ready", () => {
   console.log("I am ready!");
   updateAllServers();
+});
+
+client.on("guildCreate", guild => {
+    console.log("Joined a new guild: " + guild.name);
+    serverID = guild.id;
+    channelCheck(guild);
 });
 
 client.on('messageReactionAdd', (reaction, user) => {
@@ -106,11 +102,17 @@ client.on('messageReactionAdd', (reaction, user) => {
 
       if( eventID ) {
         if(reaction.emoji.name === "🆗") {
-          joinEvent(eventID, user, "confirmed");
+        	reaction.message.guild.fetchMember(user).then(function(guildMember){
+        		player = guildMember.nickname ? guildMember : guildMember.user;
+        		joinEvent(eventID, player, "confirmed");
+        	});
         }
 
         if(reaction.emoji.name === "🤔") {
-          joinEvent(eventID, user, "reserve");
+        	reaction.message.guild.fetchMember(user).then(function(guildMember){
+        		player = guildMember.nickname ? guildMember : guildMember.user;
+          	joinEvent(eventID, player, "reserve");
+        	});
         }
 
         if(reaction.emoji.name === "⛔") {
@@ -131,10 +133,10 @@ client.on('messageReactionAdd', (reaction, user) => {
 client.on("message", (message) => {
 
   if ( message.author.bot ) return;
+  if ( message.channel != eventChannel && message.channel != channel ) return;
   if ( message.guild === null ) return; // Disallow DM
 
   isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.id == "198636356623269888") ? true : false;
-
   serverID = message.guild.id;
 
   channelCheck(message.guild);
@@ -142,257 +144,270 @@ client.on("message", (message) => {
   const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
-  if ( command.toLowerCase() === "l2l" ) {
+  /****************************
+			raid_lfg channel
 
-    switch ( args[0] ) {
+      -> !event create "event name" "event description" | e.g. !event create "Levi 8 Dec 9PM" "Bring banners"
+      -> !event remove event_id | e.g. !event remove 5
+      -> !event edit event_id "event name" "event description" | !event edit 5 "Levi 8 Dec 9PM" "Bring MORE banners"
+      -> !event add event_id @user confirmed|reserve | !event add 5 @xenodus
+      -> !event remove event_id @user | !event remove 5 @xenodus
+  *****************************/
 
-      /***************************
-            Event Commands
-      ****************************
-      -> create event_name event_description
-      -> delete event_id
-      -> edit event_id event_name event_description
-      **************************/
+  if ( command.toLowerCase() === "event" ) {
 
-      case "event":
-        switch ( args[1] ) {
-          // !l2l event create "Levi Raid 20 Feb 9PM" "Bring raid banners!"
-          case "create":
-            if ( args.length > 2 ) {
+	  switch ( args[0] ) {
 
-              let recompose = args.slice(2, args.length).join(" ");
-              let indices = []; // find the indices of the quotation marks
+	    // !event create "Levi Raid 20 Feb 9PM" "Bring raid banners!"
+	    case "create":
+	      if ( args.length > 1 ) {
 
-              for (var i in recompose) {
-                  let char = recompose[i];
-                if (char === '"') {
-                  indices.push(i);
-                }
-              }
+	        let recompose = args.slice(1, args.length).join(" ");
+	        let indices = []; // find the indices of the quotation marks
 
-              let eventName;
-              let eventDescription = '';
+	        for (var i in recompose) {
+	            let char = recompose[i];
+	          if (char === '"') {
+	            indices.push(i);
+	          }
+	        }
 
-              if (indices.length == 0) {
-                eventName = args.slice(2, args.length).join(" ");
-              }
-              else if(indices.length == 2) {
-                eventName = recompose.substring(indices[0] + 1, indices[1]);
-                let nameLength = parseInt(indices[1]) + 1;
-                if ( recompose.length > nameLength ) {
-                  eventDescription = recompose.substring(nameLength+1);
-                }
-              }
-              else if(indices.length == 4) {
-                eventName = recompose.substring(indices[0] + 1, indices[1]);
-                eventDescription = recompose.substring(parseInt(indices[2]) + 1, indices[3]);
-              }
-              else {
-                eventName = args[2];
-              }
+	        let eventDescription = '';
 
-              createEvent(message.author, eventName, eventDescription);
-            }
+	        if (indices.length == 0) {
+	          eventName = args.slice(1, args.length).join(" ");
+	        }
+	        else if(indices.length == 2) {
+	          eventName = recompose.substring(indices[0] + 1, indices[1]);
 
-            break;
+	          let nameLength = parseInt(indices[1]) + 1;
+	          if ( recompose.length > nameLength ) {
+	            eventDescription = recompose.substring(nameLength+1);
+	          }
+	        }
+	        else if(indices.length == 4) {
+	          eventName = recompose.substring(indices[0] + 1, indices[1]);
+	          eventDescription = recompose.substring(parseInt(indices[2]) + 1, indices[3]);
+	        }
+	        else {
+	          eventName = args[1];
+	        }
 
-          // Restricted to message author or admin
-          case "delete":
-            if ( args.length > 2 ) {
-              let eventID = args[2];
-              deleteEvent(eventID, message.author);
-            }
+	        createEvent(message.author, eventName, eventDescription);
+	      }
 
-            break;
+	      break;
 
-          // Restricted to message author or admin
-          case "edit":
-            if ( args.length > 3 ) {
-              eventID = args[2];
+	    // Restricted to message author or admin
+	    // !event delete event_id
+	    case "delete":
+	      if ( args.length > 1 ) {
+	        let eventID = args[1];
+	        deleteEvent(eventID, message.author);
+	      }
 
-              if ( eventID ) {
-                let recompose = args.slice(3, args.length).join(" ");
-                let indices = []; // find the indices of the quotation marks
+	      break;
 
-                for (var i in recompose) {
-                    let char = recompose[i];
-                  if (char === '"') {
-                    indices.push(i);
-                  }
-                }
+	    // Restricted to message author or admin
+	    // !event edit event_id "event_name" "event_description"
+	    case "edit":
+	      if ( args.length > 1 ) {
+	        eventID = args[1];
 
-                let eventName;
-                let eventDescription = '';
+	        if ( eventID ) {
+	          let recompose = args.slice(2, args.length).join(" ");
+	          let indices = []; // find the indices of the quotation marks
 
-                if (indices.length == 0) {
-                  eventName = args.slice(3, args.length).join(" ");
-                }
-                else if(indices.length == 2) {
-                  eventName = recompose.substring(indices[0] + 1, indices[1]);
-                  let nameLength = parseInt(indices[1]) + 1;
-                  if ( recompose.length > nameLength ) {
-                    eventDescription = recompose.substring(nameLength+1);
-                  }
-                }
-                else if(indices.length == 4) {
-                  eventName = recompose.substring(indices[0] + 1, indices[1]);
-                  eventDescription = recompose.substring(parseInt(indices[2]) + 1, indices[3]);
-                }
-                else {
-                  eventName = args[2];
-                }
+	          for (var i in recompose) {
+	              let char = recompose[i];
+	            if (char === '"') {
+	              indices.push(i);
+	            }
+	          }
 
-                updateEvent(message.author, eventID, eventName, eventDescription);
-              }
-            }
-            break;
+	          let eventName;
+	          let eventDescription = '';
 
-          // Add users to events !l2l event add event_id @user confirmed|reserve
-          case "add":
-            if ( args.length > 2 ) {
-              let eventID = args[2];
-              let player = message.mentions.users.first();
-              let type = args[4] ? args[4] : "";
-              type = (type == "reserve") ? "reserve" : "confirmed";
+	          if (indices.length == 0) {
+	            eventName = args.slice(2, args.length).join(" ");
+	          }
+	          else if(indices.length == 2) {
+	            eventName = recompose.substring(indices[0] + 1, indices[1]);
+	            let nameLength = parseInt(indices[1]) + 1;
+	            if ( recompose.length > nameLength ) {
+	              eventDescription = recompose.substring(nameLength+1);
+	            }
+	          }
+	          else if(indices.length == 4) {
+	            eventName = recompose.substring(indices[0] + 1, indices[1]);
+	            eventDescription = recompose.substring(parseInt(indices[2]) + 1, indices[3]);
+	          }
+	          else {
+	            eventName = args[2];
+	          }
 
-              if( eventID && player ) {
-                add2Event(eventID, type, message.author, player);
-              }
-            }
+	          updateEvent(message.author, eventID, eventName, eventDescription);
+	        }
+	      }
+	      break;
 
-            break;
+	    // Add users to events !event add event_id @user confirmed|reserve
+	    case "add":
+	      if ( args.length > 1 ) {
+	        let eventID = args[1];
+	        let player = message.mentions.members.first().nickname ? message.mentions.members.first() : message.mentions.users.first();
+	        let type = args[3] ? args[3] : "";
+	        type = (type == "reserve") ? "reserve" : "confirmed";
 
-          // Add users to events !l2l event remove event_id @user
-          case "remove":
-            if ( args.length > 2 ) {
-              let eventID = args[2];
-              let player = message.mentions.users.first();
+	        if( eventID && player ) {
+	          add2Event(eventID, type, message.author, player);
+	        }
+	      }
 
-              if( eventID && player ) {
-                removeFromEvent(eventID, message.author, player);
-              }
-            }
+	      break;
 
-            break;
+	    // Add users to events !event remove event_id @user
+	    case "remove":
+	      if ( args.length > 1 ) {
+	        let eventID = args[1];
+	        let player = message.mentions.users.first();
 
-          // Add users to add comments to sign up
-          // !l2l event comment 5 Petra's run maybe?
-          case "comment":
-            if ( args.length > 2 ) {
-              let eventID = args[2];
-              let player = message.author;
-              let comment =  args.slice(3, args.length).join(" ") ? args.slice(3, args.length).join(" ") : "";
+	        if( eventID && player ) {
+	          removeFromEvent(eventID, message.author, player);
+	        }
+	      }
 
-              if( eventID ) {
-                updateEventAddComment( eventID, player, comment );
-              }
-            }
+	      break;
 
-            break;
+	    // !event comment 5 Petra's run maybe?
+	    case "comment":
+	      if ( args.length > 1 ) {
+	        let eventID = args[1];
+	        let player = message.author;
+	        let comment =  args.slice(2, args.length).join(" ") ? args.slice(2, args.length).join(" ") : "";
 
-          // Alternative command to sign up
-          case "sub":
-            if ( args.length > 2 ) {
-              let eventID = args[2];
-              joinEvent(eventID, message.author, "confirmed");
-            }
+	        if( eventID ) {
+	          updateEventAddComment( eventID, player, comment );
+	        }
+	      }
 
-            break;
+	      break;
 
-          // Alternative command to unsub
-          case "unsub":
-            if ( args.length > 2 ) {
-              let eventID = args[2];
-              unSubEvent(eventID, message.author);
-            }
+	    // Alternative command to sign up
+	    // !event sub event_id
+	    case "sub":
+	      if ( args.length > 1 ) {
+	        let eventID = args[1];
+	        player = message.member.nickname ? message.member : message.author;
+	        joinEvent(eventID, player, "confirmed");
+	      }
 
-            break;
+	      break;
 
-          case "help":
-            message.author.send(eventHelpTxt);
-            break;
+	    // Alternative command to unsub
+	    // !event unsub event_id
+	    case "unsub":
+	      if ( args.length > 1 ) {
+	        let eventID = args[1];
+	        unSubEvent(eventID, message.author);
+	      }
 
-          default:
-            clear(eventChannel);
-            getEvents();
-        }
+	      break;
 
-        break;
+      // !event help
+	    case "help":
+	      message.author.send(eventHelpTxt);
+	      break;
 
-      case undefined:
-      case null:
-      case "":
-      case 'show':
-        getInterestList(message);
-        break;
+	    case "clear":
+	      clear(eventChannel);
+	      getEvents();
+	      break;
 
-      case 'clear':
-        if ( isAdmin ) {
-          clear(channel);
-          clear(eventChannel);
-          getInterestList();
-          getEvents();
-        }
-        break;
-
-      /***************************
-            Interest List Commands
-      ****************************
-      -> raid_name comment | e.g. !l2l levi free after 10
-      -> raid_name unsub | e.g. !l2l levi unsub
-      -> raid_name add user_name comment | !l2l levi add xenodus noob
-      -> raid_name unsub user_name | !l2l levi unsub xenodus
-      **************************/
-
-      default:
-        let raidInterested = smartInputDetect( args[0] );
-        let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
-
-        for ( var raidName in l2lraids ) {
-          if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
-            switch ( args[1] ) {
-              /********************************
-                          Mods Only
-              ********************************/
-              case "remove":
-                if( args[2] && isAdmin === true ) {
-                  if( args[2] === '*' )
-                    unSubAll(raidName, message);
-                  else {
-                    let user = message.mentions.users.first();
-
-                    if( user ) {
-                      unSub(raidName, user, message);
-                    }
-                  }
-                }
-                break;
-
-              case "add":
-                if( args[2] && isAdmin === true ) {
-                  let user = message.mentions.users.first();
-
-                  if( user ) {
-                    let remarks = args[3] ? args.slice(3, args.length).join(" ") : "";
-                    sub(raidName, user, remarks, message);
-                  }
-                }
-                break;
-
-              /********************************
-                  Interest List Sub / Unsub
-              ********************************/
-              case "unsub":
-                unSub(raidName, message.author, message);
-                break;
-              default:
-                sub(raidName, message.author, remarks, message);
-            }
-          }
-        }
-      // End default case
-    }
+	    default:
+	    	break;
+	  }
   }
+
+  /****************************
+			raid_newbies_signup channel
+
+      -> sub raid_name comment | e.g. !sub levi free after 10
+      -> unsub raid_name | e.g. !unsub levi
+      -> add raid_name @user_name comment | !add levi @xenodus noob
+      -> remove raid_name @user_name | !remove levi @xenodus
+  *****************************/
+
+  else if ( command.toLowerCase() === "sub" ) {
+    let raidInterested = smartInputDetect( args[0] );
+    let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
+
+    for ( var raidName in raids ) {
+      if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
+      	player = message.member.nickname ? message.member : message.author;
+  			sub(raidName, player, remarks, message);
+      }
+    }
+	}
+
+	else if ( command.toLowerCase() === "unsub" ) {
+    let raidInterested = smartInputDetect( args[0] );
+    let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
+
+    for ( var raidName in raids ) {
+      if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
+  			unSub(raidName, message.author, message);
+      }
+    }
+	}
+
+  else if ( command.toLowerCase() === "add" ) {
+    let raidInterested = smartInputDetect( args[0] );
+    let remarks = args[2] ? args.slice(2, args.length).join(" ") : "";
+
+    for ( var raidName in raids ) {
+      if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
+
+	      if( args[1] && isAdmin === true ) {
+	        let user = message.mentions.members.first().nickname ? message.mentions.members.first() : message.mentions.users.first();
+
+	        if( user ) {
+	          sub(raidName, user, remarks, message);
+	        }
+	      }
+      }
+    }
+	}
+
+  else if ( command.toLowerCase() === "remove" ) {
+    let raidInterested = smartInputDetect( args[0] );
+
+    for ( var raidName in raids ) {
+      if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
+
+	      if( args[1] && isAdmin === true ) {
+	        let user = message.mentions.users.first();
+
+	        if( user ) {
+	          unSub(raidName, user, message);
+	        }
+	      }
+      }
+    }
+	}
+
+	else if ( command.toLowerCase() === "show" ) {
+    getInterestList(message);
+	}
+
+	else if ( command.toLowerCase() === "clear" || command.toLowerCase() === "refresh" ) {
+  	if ( isAdmin ) {
+		  clear(channel);
+		  clear(eventChannel);
+		  getInterestList();
+		  getEvents();
+    }
+	}
 
   // Delete message after processed to keep channels clean
   if ( message.channel === eventChannel || message.channel === channel )
@@ -403,15 +418,6 @@ client.on("message", (message) => {
   Functions
 *******************************/
 
-function clear(channel, limit = 100) {
-  return channel.fetchMessages({limit}).then(collected => {
-    if (collected.size > 0) {
-      channel.bulkDelete(collected, true);
-    }
-  });
-}
-
-/*
 async function clear(channel) {
   try{
     const fetched = await channel.fetchMessages({limit: 99});
@@ -421,18 +427,21 @@ async function clear(channel) {
     return;
   }
 }
-*/
 
 function updateAllServers() {
   for( var guild of client.guilds.values() ) {
     serverID = guild.id;
     channelCheck(guild);
-    clear(channel);
-    clear(eventChannel);
-    getInterestList();
-    getEvents();
+
+		setTimeout(function () {
+	    clear(channel);
+	    clear(eventChannel);
+	    getInterestList();
+	    getEvents();
+		}, 1000);
   }
 }
+//
 
 function unSubEvent(eventID, player) {
   mysql.createConnection(config.mysqlConfig).then(function(conn){
@@ -489,10 +498,12 @@ function joinEvent(eventID, player, type, addedByUser) {
     connection = conn;
     return conn.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id]);
   }).then(function(results){
+  	username = player.nickname ? player.nickname : player.username;
+
     if ( addedByUser )
-      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: player.username, user_id: player.id, type: type, added_by_user_id: addedByUser.id, added_by_username: addedByUser.username, date_added: moment().format('YYYY-M-D H:m:s')});
+      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, added_by_user_id: addedByUser.id, added_by_username: addedByUser.username, date_added: moment().format('YYYY-M-D H:m:s')});
     else
-      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: player.username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
+      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
   }).then(function(results){
     clear(eventChannel);
     getEvents();
@@ -562,7 +573,7 @@ function getEvents() {
         .setColor("#DB9834")
         .setDescription("Sign up to raids by reacting :ok: to __confirm__ :thinking: to __reserve__ :no_entry: to __remove__ (self)");
 
-      richEmbed.addField("Quick Commands", 'Full command list: !l2l event help\nCreate event: !l2l event create "event_name" "event description"\nAdd comment: !l2l event comment event_id "comment"', true);
+      richEmbed.addField("Quick Commands", 'Full command list: !event help\nCreate event: !event create "event_name" "event description"\nAdd comment: !event comment event_id "comment"', true);
 
     eventChannel.send( richEmbed );
   });
@@ -670,12 +681,12 @@ function createEvent(player, eventName, eventDescription) {
   });
 }
 
-function channelCheck(guild) {
+async function channelCheck(guild) {
   let channelCategoryExists = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category");
   let channelCategoryID;
 
   if( channelCategoryExists === null )
-    guild.createChannel(channelCategoryName, "category").then(function(newChannel){
+    await guild.createChannel(channelCategoryName, "category").then(function(newChannel){
       channelCategoryID = newChannel.id;
     });
   else
@@ -684,7 +695,7 @@ function channelCheck(guild) {
   let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( channelExists === null )
-    guild.createChannel(channelName, "text").then(function(newChannel){
+    await guild.createChannel(channelName, "text").then(function(newChannel){
       newChannel.setParent( channelCategoryID );
       channelID = newChannel.id;
       channel = client.channels.get(channelID);
@@ -697,7 +708,7 @@ function channelCheck(guild) {
   let eventChannelExists = guild.channels.find(channel => channel.name == eventChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( eventChannelExists === null )
-    guild.createChannel(eventChannelName, "text").then(function(newChannel){
+    await guild.createChannel(eventChannelName, "text").then(function(newChannel){
       newChannel.setParent( channelCategoryID );
       eventChannelID = newChannel.id;
       eventChannel = client.channels.get(eventChannelID);
@@ -711,9 +722,10 @@ function channelCheck(guild) {
 function sub(raid, player, comment, message) {
   mysql.createConnection(config.mysqlConfig).then(function(conn){
     connection = conn;
-    return conn.query("DELETE FROM interest_list where raid = ? AND username = ? AND user_id = ? AND server_id = ?", [raid, player.username, , player.id, message.guild.id]);
+    username = player.nickname ? player.nickname : player.username;
+    return conn.query("DELETE FROM interest_list where raid = ? AND user_id = ? AND server_id = ?", [raid, player.id, message.guild.id]);
   }).then(function(results){
-    return connection.query("INSERT into interest_list SET ?", {raid: raid, username: player.username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
+    return connection.query("INSERT into interest_list SET ?", {raid: raid, username: username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
   }).then(function(results){
     getInterestList();
   });
@@ -738,7 +750,7 @@ function unSubAll(raid, message) {
 function getInterestList() {
 
   mysql.createConnection(config.mysqlConfig).then(function(conn){
-    l2lraids = {
+    raids = {
       'Levi': [],
       'EoW': [],
       'SoS': [],
@@ -752,12 +764,12 @@ function getInterestList() {
     var rows = JSON.parse(JSON.stringify(results));
 
     for(var i = 0; i < rows.length; i++) {
-      l2lraids[ rows[i]['raid'] ][ rows[i]['username'] ] = rows[i]['comment'] ? rows[i]['comment'] : "";
+      raids[ rows[i]['raid'] ][ rows[i]['username'] ] = rows[i]['comment'] ? rows[i]['comment'] : "";
     }
 
-    return l2lraids;
+    return raids;
   })
-  .then(function(l2lraids){
+  .then(function(raids){
 
     var fields = [];
 
@@ -767,16 +779,16 @@ function getInterestList() {
       .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learn.");
 
     // Anybody in interest list?
-    for ( var raid in l2lraids ) {
-      if ( Object.keys(l2lraids[raid]).length > 0 ) {
+    for ( var raid in raids ) {
+      if ( Object.keys(raids[raid]).length > 0 ) {
         interest = true;
         // Display if # of ppl interested in raid is > 0
         fields.push({
-          name: config.raidNameMapping[raid] + " ("+Object.keys(l2lraids[raid]).length+")",
-          value: '```yaml\n' + printUsernameRemarks( l2lraids[raid] ) + '```'
+          name: config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")",
+          value: '```yaml\n' + printUsernameRemarks( raids[raid] ) + '```'
         });
 
-        richEmbed.addField(config.raidNameMapping[raid] + " ("+Object.keys(l2lraids[raid]).length+")", '```yaml\n' + printUsernameRemarks( l2lraids[raid] ) + '```', true);
+        richEmbed.addField(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")", '```yaml\n' + printUsernameRemarks( raids[raid] ) + '```', true);
       }
     }
 
