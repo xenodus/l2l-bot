@@ -22,9 +22,7 @@ const helpTxt = {
   name: 'Commands',
   value:   '```' +
   'Subscribe - !sub levi/eow/sos/wish/scourge comments\n' +
-  'Unsubscribe - !unsub levi/eow/sos/wish/scourge\n\n' +
-  'Add user - !add levi @xenodus\n' +
-  'Remove user - !remove levi @xenodus' +
+  'Unsubscribe - !unsub levi/eow/sos/wish/scourge\n' +
   '```'
 }
 
@@ -33,24 +31,24 @@ const eventHelpTxt =
   'SG-E Bot Event Commands\n------------------------\n' +
   'Enter the commands in discord channel and NOT here.\n\n' +
   'Create: !event create "event name goes here" "event description goes here"\n' +
-  'e.g. !event create "Last Wish 31 Dec 8PM" "Speed run"\n\n' +
+  'e.g. !event create "31 Dec 8PM Last Wish Speedrun" "min 550 and bring whisper"\n\n' +
 
   'Delete: !event delete event_id OR react with ❌ on the event\n' +
   'e.g. !event delete 5\n\n' +
 
   'Edit: !event edit event_id "event name goes here" "event description goes here"\n' +
-  'e.g. !event edit 5 "Last Wish 31 Dec 8PM" "Petra run"\n\n' +
+  'e.g. !event edit 5 "31 Dec 8PM Last Wish Speedrun" "min 550 and bring whisper"\n\n' +
 
   'Notify: React with 👋 on the event to ping all users that are signed up\n\n' +
 
-  'Add/Edit Comment: !L2L event comment event_id "comment"\n' +
+  'Add/Edit Comment: !event comment event_id "comment"\n' +
   'e.g. !event comment 5 "First timer here!"\n\n' +
 
-  '** Add player to event: !L2L event add event_id @player\n' +
+  '** Add player to event: !event add event_id @player\n' +
   'e.g. !event add 5 @player\n' +
   'e.g. !event add 5 @player reserve\n\n' +
 
-  '** Remove player from event: !L2L event remove event_id @player\n' +
+  '** Remove player from event: !event remove event_id @player\n' +
   'e.g. !event remove 5 @player\n\n' +
 
   '** Only applicable for admins, mods and event creator' +
@@ -59,7 +57,7 @@ const eventHelpTxt =
 let isAdmin = false;
 
 // Channels
-const channelCategoryName = "Looking for group";
+const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
 const eventChannelName = "raid_lfg_test"; // no spaces all lower case
 let channelID;
@@ -71,6 +69,10 @@ let serverID; // also known as guild id
 /******************************
   Event Listeners
 *******************************/
+
+client.on("error", (e) => console.error(e));
+client.on("warn", (e) => console.warn(e));
+client.on("debug", (e) => console.info(e));
 
 client.on("ready", () => {
   console.log("I am ready!");
@@ -133,10 +135,10 @@ client.on('messageReactionAdd', (reaction, user) => {
 client.on("message", (message) => {
 
   if ( message.author.bot ) return;
-  if ( message.channel != eventChannel && message.channel != channel ) return;
+  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
-  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.id == "198636356623269888") ? true : false;
+  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.id == "198636356623269888" || message.member.id == "154572358051430400") ? true : false;
   serverID = message.guild.id;
 
   channelCheck(message.guild);
@@ -507,7 +509,7 @@ function joinEvent(eventID, player, type, addedByUser) {
   }).then(function(results){
     clear(eventChannel);
     getEvents();
-    signupAlert(eventID, player, type);
+    // signupAlert(eventID, player, type);
   });
 }
 
@@ -573,7 +575,7 @@ function getEvents() {
         .setColor("#DB9834")
         .setDescription("Sign up to raids by reacting :ok: to __confirm__ :thinking: to __reserve__ :no_entry: to __remove__ (self)");
 
-      richEmbed.addField("Quick Commands", 'Full command list: !event help\nCreate event: !event create "event_name" "event description"\nAdd comment: !event comment event_id "comment"', true);
+      richEmbed.addField("Quick Commands", 'Full command list: !event help\nCreate event: !event create "31 Dec 8PM Last Wish Speedrun" "min 550 and bring whisper"\nAdd comment: !event comment event_id "comment"', true);
 
     eventChannel.send( richEmbed );
   });
@@ -781,30 +783,12 @@ function getInterestList() {
     // Anybody in interest list?
     for ( var raid in raids ) {
       if ( Object.keys(raids[raid]).length > 0 ) {
-        interest = true;
         // Display if # of ppl interested in raid is > 0
-        fields.push({
-          name: config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")",
-          value: '```yaml\n' + printUsernameRemarks( raids[raid] ) + '```'
-        });
-
-        richEmbed.addField(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")", '```yaml\n' + printUsernameRemarks( raids[raid] ) + '```', true);
+        richEmbed.addField(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")", '```css\n' + printUsernameRemarks( raids[raid] ) + '```');
       }
     }
 
-    // Instructions fields
-    fields.push(helpTxt)
-
     richEmbed.addField(helpTxt.name, helpTxt.value);
-
-    embed = {
-      embed: {
-        color: 3447003,
-        title: "Teaching Raid LFG",
-        description: "Subscribe to let mods / sherpas know when and what raids you're interested to learn.",
-        fields: fields,
-      }
-    };
 
     clear(channel);
     channel.send( richEmbed );
@@ -815,10 +799,12 @@ function printUsernameRemarks( raid ) {
   var txt = '';
 
   for ( name in raid ) {
-    txt += name;
+    txt += "• " + name;
     txt += raid[name] ? " - "+raid[name]+"" : "";
     txt += "\n";
   }
+
+  console.log( "Int list length >>> " + txt.length );
 
   return txt;
 }
