@@ -22,7 +22,12 @@ const helpTxt = {
   name: 'Commands',
   value:   '```' +
   'Subscribe - !sub levi/eow/sos/wish/scourge comments\n' +
-  'Unsubscribe - !unsub levi/eow/sos/wish/scourge\n' +
+  'Unsubscribe - !unsub levi/eow/sos/wish/scourge\n\n' +
+  'Admin/Mods only\n' +
+  '-----------------------\n' +
+  'Add - !add levi/eow/sos/wish/scourge @user\n' +
+  'Remove - !remove levi/eow/sos/wish/scourge @user\n' +
+  'Ping - !ping levi/eow/sos/wish/scourge message\n' +
   '```'
 }
 
@@ -59,7 +64,7 @@ let isAdmin = false;
 // Channels
 const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
-const eventChannelName = "raid_lfg_test"; // no spaces all lower case
+const eventChannelName = "raid_lfg"; // no spaces all lower case
 let channelID;
 let eventChannelID;
 let channel;
@@ -255,13 +260,14 @@ client.on("message", (message) => {
 
 	    // Add users to events !event add event_id @user confirmed|reserve
 	    case "add":
-	      if ( args.length > 1 ) {
+	      if ( args.length > 1 && message.mentions.users.first() ) {
 	        let eventID = args[1];
-	        let player = message.mentions.members.first().nickname ? message.mentions.members.first() : message.mentions.users.first();
+	        let player = message.mentions.users.first();
 	        let type = args[3] ? args[3] : "";
 	        type = (type == "reserve") ? "reserve" : "confirmed";
 
 	        if( eventID && player ) {
+            console.log( player );
 	          add2Event(eventID, type, message.author, player);
 	        }
 	      }
@@ -270,7 +276,7 @@ client.on("message", (message) => {
 
 	    // Add users to events !event remove event_id @user
 	    case "remove":
-	      if ( args.length > 1 ) {
+	      if ( args.length > 1 && message.mentions.users.first() ) {
 	        let eventID = args[1];
 	        let player = message.mentions.users.first();
 
@@ -397,6 +403,33 @@ client.on("message", (message) => {
       }
     }
 	}
+
+  else if ( command.toLowerCase() === "ping" ) {
+    let raidInterested = smartInputDetect( args[0] );
+    let msg = args[1] ? "\nMessage: " + args.slice(1, args.length).join(" ") : "";
+
+    if( isAdmin ) {
+      for ( var raidName in raids ) {
+        if ( raidInterested.toLowerCase() == raidName.toLowerCase() ) {
+          mysql.createConnection(config.mysqlConfig).then(function(conn){
+            connection = conn;
+            return conn.query("SELECT * FROM interest_list WHERE server_id = ? AND raid = ?", [serverID, raidInterested]);
+          }).then(function(results){
+            var rows = JSON.parse(JSON.stringify(results));
+
+            // For each users
+            for(var i = 0; i < rows.length; i++) {
+              let signup_id = rows[i].user_id;
+
+              client.fetchUser(signup_id).then(function(signup){
+                signup.send("This is a ping by " + message.author + " with regards to your interest in learning the raid, " + config.raidNameMapping[raidName] + "." + msg);
+              });
+            }
+          });
+        }
+      }
+    }
+  }
 
 	else if ( command.toLowerCase() === "show" ) {
     getInterestList(message);
@@ -560,7 +593,9 @@ function getEvents() {
           richEmbed.addField("Confirmed", confirmed, true);
           richEmbed.addField("Reserve", reserve, true);
           eventChannel.send( richEmbed ).then(async function(message){
-            await message.react('🆗');
+            if( confirmedCount <= 6 )
+              await message.react('🆗');
+
             await message.react('🤔');
             await message.react('⛔');
             return;
@@ -773,24 +808,34 @@ function getInterestList() {
   })
   .then(function(raids){
 
-    var fields = [];
+    clear(channel);
 
-    let richEmbed = new Discord.RichEmbed()
+    // Instructions
+    var richEmbed = new Discord.RichEmbed()
       .setTitle("Teaching Raid LFG")
       .setColor("#DB9834")
       .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learn.");
 
-    // Anybody in interest list?
+    channel.send( richEmbed );
+
+    // Interest list
     for ( var raid in raids ) {
       if ( Object.keys(raids[raid]).length > 0 ) {
-        // Display if # of ppl interested in raid is > 0
-        richEmbed.addField(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")", '```css\n' + printUsernameRemarks( raids[raid] ) + '```');
+        richEmbed = new Discord.RichEmbed()
+        .setTitle(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")")
+        .setColor("#DB9834")
+        .setDescription('```css\n' + printUsernameRemarks( raids[raid] ) + '```');
+
+        channel.send( richEmbed );
       }
     }
 
-    richEmbed.addField(helpTxt.name, helpTxt.value);
+    // Commands
+    richEmbed = new Discord.RichEmbed()
+    .setTitle(helpTxt.name)
+    .setColor("#DB9834")
+    .setDescription(helpTxt.value);
 
-    clear(channel);
     channel.send( richEmbed );
   });
 }
@@ -803,8 +848,6 @@ function printUsernameRemarks( raid ) {
     txt += raid[name] ? " - "+raid[name]+"" : "";
     txt += "\n";
   }
-
-  console.log( "Int list length >>> " + txt.length );
 
   return txt;
 }
