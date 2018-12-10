@@ -2,7 +2,7 @@
   Variables & Libs
 *******************************/
 
-var config = require('./config');
+var config = require('./devConfig');
 var mysql = require('promise-mysql');
 var pool = config.getPool();
 
