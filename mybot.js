@@ -4,7 +4,8 @@
 
 var config = require('./config');
 var mysql = require('promise-mysql');
-var connection = mysql.createConnection(config.mysqlConfig);
+//var connection = mysql.createConnection(config.mysqlConfig);
+var pool = mysql.createPool(config.mysqlPoolConfig);
 
 const moment = require("moment");
 const Discord = require("discord.js");
@@ -411,8 +412,7 @@ client.on("message", (message) => {
     if( isAdmin ) {
       for ( var raidName in raids ) {
         if ( raidInterested.toLowerCase() == raidName.toLowerCase() ) {
-          mysql.createConnection(config.mysqlConfig).then(function(conn){
-            connection = conn;
+          pool.getConnection().then(function(conn){
             return conn.query("SELECT * FROM interest_list WHERE server_id = ? AND raid = ?", [serverID, raidInterested]);
           }).then(function(results){
             var rows = JSON.parse(JSON.stringify(results));
@@ -479,8 +479,7 @@ function updateAllServers() {
 //
 
 function unSubEvent(eventID, player) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id]);
   }).then(function(results){
     clear(eventChannel);
@@ -489,8 +488,7 @@ function unSubEvent(eventID, player) {
 }
 
 function removeFromEvent(eventID, user, player) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event WHERE event_id = ? ", [eventID]);
   }).then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
@@ -504,8 +502,7 @@ function removeFromEvent(eventID, user, player) {
 }
 
 function updateEventAddComment(eventID, user, comment) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("UPDATE event_signup SET comment = ? WHERE event_id = ? AND user_id = ?", [comment, eventID, user.id]);
   }).then(function(results){
     clear(eventChannel);
@@ -514,8 +511,7 @@ function updateEventAddComment(eventID, user, comment) {
 }
 
 function add2Event(eventID, type, user, player) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event WHERE event_id = ? ", [eventID]);
   }).then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
@@ -529,16 +525,15 @@ function add2Event(eventID, type, user, player) {
 }
 
 function joinEvent(eventID, player, type, addedByUser) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id]);
   }).then(function(results){
   	username = player.nickname ? player.nickname : player.username;
 
     if ( addedByUser )
-      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, added_by_user_id: addedByUser.id, added_by_username: addedByUser.username, date_added: moment().format('YYYY-M-D H:m:s')});
+      return pool.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, added_by_user_id: addedByUser.id, added_by_username: addedByUser.username, date_added: moment().format('YYYY-M-D H:m:s')});
     else
-      return connection.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
+      return pool.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
   }).then(function(results){
     clear(eventChannel);
     getEvents();
@@ -547,8 +542,7 @@ function joinEvent(eventID, player, type, addedByUser) {
 }
 
 function getEvents() {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event WHERE server_id = ?", [serverID]);
   }).then(function(results){
 
@@ -559,7 +553,7 @@ function getEvents() {
 
       let event = rows[i];
 
-      mysql.createConnection(config.mysqlConfig).then(function(c){
+      pool.getConnection().then(function(c){
         return c.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id]);
       }).then(function(results){
         var signupsRows = JSON.parse(JSON.stringify(results));
@@ -617,8 +611,7 @@ function getEvents() {
 }
 
 function signupAlert(eventID, signup, type) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event WHERE event_id = ?", [eventID]);
   }).then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
@@ -635,8 +628,7 @@ function signupAlert(eventID, signup, type) {
 }
 
 function pingEventSignups(eventID) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event_signup LEFT JOIN event ON event_signup.event_id = event.event_id WHERE event_signup.event_id = ?", [eventID]);
   }).then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
@@ -662,8 +654,7 @@ function pingEventSignups(eventID) {
 
 function deleteEvent(eventID, player) {
 
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event WHERE event_id = ?", [eventID]);
   }).then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
@@ -673,7 +664,7 @@ function deleteEvent(eventID, player) {
     }
 
     if ( isAdmin || event.created_by == player.id ) {
-      return connection.query("DELETE FROM event WHERE event_id = ?", [eventID]);
+      return pool.query("DELETE FROM event WHERE event_id = ?", [eventID]);
     }
 
   }).then(function(){
@@ -683,8 +674,7 @@ function deleteEvent(eventID, player) {
 }
 
 function updateEvent(player, eventID, eventName, eventDescription) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     return conn.query("SELECT * FROM event WHERE event_id = ?", [eventID]);
   }).then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
@@ -694,7 +684,7 @@ function updateEvent(player, eventID, eventName, eventDescription) {
     }
 
     if ( isAdmin || event.created_by == player.id ) {
-      return connection.query("UPDATE event SET event_name = ?, event_description = ? WHERE event_id = ?", [eventName, eventDescription, eventID]);
+      return pool.query("UPDATE event SET event_name = ?, event_description = ? WHERE event_id = ?", [eventName, eventDescription, eventID]);
     }
 
   }).then(function(){
@@ -704,7 +694,7 @@ function updateEvent(player, eventID, eventName, eventDescription) {
 }
 
 function createEvent(player, eventName, eventDescription) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
+  pool.getConnection().then(function(conn){
     return conn.query("INSERT into event SET ?",
       { server_id: serverID,
         event_name: eventName,
@@ -757,19 +747,18 @@ async function channelCheck(guild) {
 }
 
 function sub(raid, player, comment, message) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
-    connection = conn;
+  pool.getConnection().then(function(conn){
     username = player.nickname ? player.nickname : player.username;
     return conn.query("DELETE FROM interest_list where raid = ? AND user_id = ? AND server_id = ?", [raid, player.id, message.guild.id]);
   }).then(function(results){
-    return connection.query("INSERT into interest_list SET ?", {raid: raid, username: username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
+    return pool.query("INSERT into interest_list SET ?", {raid: raid, username: username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
   }).then(function(results){
     getInterestList();
   });
 }
 
 function unSub(raid, player, message) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
+  pool.getConnection().then(function(conn){
     return conn.query("DELETE FROM interest_list where raid = ? AND user_id = ? AND server_id = ?", [raid, player.id, message.guild.id]);
   }).then(function(results){
     getInterestList();
@@ -777,7 +766,7 @@ function unSub(raid, player, message) {
 }
 
 function unSubAll(raid, message) {
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
+  pool.getConnection().then(function(conn){
     return conn.query("DELETE FROM interest_list where raid = ? AND server_id = ?", [raid, message.guild.id]);
   }).then(function(results){
     getInterestList();
@@ -786,7 +775,7 @@ function unSubAll(raid, message) {
 
 function getInterestList() {
 
-  mysql.createConnection(config.mysqlConfig).then(function(conn){
+  pool.getConnection().then(function(conn){
     raids = {
       'Levi': [],
       'EoW': [],
