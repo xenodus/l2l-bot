@@ -271,7 +271,7 @@ client.on("message", (message) => {
           if( eventID && player ) {
             message.guild.fetchMember(player)
             .then(function(member){
-              add2Event(eventID, type, message.author, member);
+              add2Event(eventID, type, message.member, member);
             })
           }
         }
@@ -564,7 +564,7 @@ function updateEventMessage(eventID) {
         .then(function(message){
           message.clearReactions().then(function(message){
             message.edit( eventInfo.richEmbed ).then(async function(message){
-              if( eventInfo.confirmedCount <= 6 )
+              if( results.filter(row => row.type == "confirmed").length < 6 )
                 await message.react('🆗');
               await message.react('🤔');
               await message.react('⛔');
@@ -656,17 +656,17 @@ function getEvents() {
 
         eventChannel.send( eventInfo.richEmbed ).then(async function(message){
 
+          if( results.filter(row => row.type == "confirmed").length < 6 )
+            await message.react('🆗');
+          await message.react('🤔');
+          await message.react('⛔');
+
           client.fetchUser(event.created_by).then(function(user){
             eventChannel.guild.fetchMember(user).then(function(member){
               creator = member.nickname ? member.nickname : member.user.username;
               pool.query("UPDATE event SET message_id = ?, created_by_username = ? WHERE event_id = ?", [message.id, creator, event.event_id]);
             })
-          })
-
-          if( eventInfo.confirmedCount <= 6 )
-            await message.react('🆗');
-          await message.react('🤔');
-          await message.react('⛔');
+          });
         });
       });
     }
