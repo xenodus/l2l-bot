@@ -2,9 +2,9 @@
   Variables & Libs
 *******************************/
 
-var config = require('./config');
-var mysql = require('promise-mysql');
-var pool = config.getPool();
+const config = require('./config').production;
+const mysql = require('promise-mysql');
+const pool = config.getPool();
 
 const moment = require("moment");
 const Discord = require("discord.js");
