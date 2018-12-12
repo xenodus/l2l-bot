@@ -95,6 +95,8 @@ client.on('messageReactionAdd', (reaction, user) => {
   if ( reaction.message.guild === null ) return; // Disallow DM
   if ( user.bot ) return;
 
+  console.log( reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
+
   serverID = reaction.message.guild.id;
 
   channelCheck(reaction.message.guild);
@@ -110,15 +112,13 @@ client.on('messageReactionAdd', (reaction, user) => {
       if( eventID ) {
         if(reaction.emoji.name === "🆗") {
           reaction.message.guild.fetchMember(user).then(function(guildMember){
-            player = guildMember.nickname ? guildMember : guildMember.user;
-            joinEvent(eventID, player, "confirmed", guildMember);
+            joinEvent(eventID, guildMember, "confirmed", guildMember);
           });
         }
 
         if(reaction.emoji.name === "🤔") {
           reaction.message.guild.fetchMember(user).then(function(guildMember){
-            player = guildMember.nickname ? guildMember : guildMember.user;
-            joinEvent(eventID, player, "reserve", guildMember);
+            joinEvent(eventID, guildMember, "reserve", guildMember);
           });
         }
 
@@ -163,7 +163,7 @@ client.on("message", (message) => {
       -> !event remove event_id @user | !event remove 5 @xenodus
   *****************************/
 
-  if ( command.toLowerCase() === "event" ) {
+  if ( command === "event" ) {
 
     switch ( args[0] ) {
 
@@ -269,8 +269,10 @@ client.on("message", (message) => {
           type = (type == "reserve") ? "reserve" : "confirmed";
 
           if( eventID && player ) {
-            console.log( player );
-            add2Event(eventID, type, message.author, player);
+            message.guild.fetchMember(player)
+            .then(function(member){
+              add2Event(eventID, type, message.author, member);
+            })
           }
         }
 
@@ -308,8 +310,7 @@ client.on("message", (message) => {
       case "sub":
         if ( args.length > 1 ) {
           let eventID = args[1];
-          player = message.member.nickname ? message.member : message.author;
-          joinEvent(eventID, player, "confirmed");
+          joinEvent(eventID,  message.member);
         }
 
         break;
@@ -348,30 +349,29 @@ client.on("message", (message) => {
       -> remove raid_name @user_name | !remove levi @xenodus
   *****************************/
 
-  else if ( command.toLowerCase() === "sub" ) {
+  else if ( command === "sub" ) {
     let raidInterested = smartInputDetect( args[0] );
     let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
 
     for ( var raidName in raids ) {
       if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
-        player = message.member.nickname ? message.member : message.author;
-        sub(raidName, player, remarks, message);
+        sub(raidName, message.member, remarks, message);
       }
     }
   }
 
-  else if ( command.toLowerCase() === "unsub" ) {
+  else if ( command === "unsub" ) {
     let raidInterested = smartInputDetect( args[0] );
     let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
 
     for ( var raidName in raids ) {
       if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
-        unSub(raidName, message.author, message);
+        unSub(raidName, message.member, message);
       }
     }
   }
 
-  else if ( command.toLowerCase() === "add" ) {
+  else if ( command === "add" ) {
     let raidInterested = smartInputDetect( args[0] );
     let remarks = args[2] ? args.slice(2, args.length).join(" ") : "";
 
@@ -379,7 +379,7 @@ client.on("message", (message) => {
       if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
 
         if( args[1] && isAdmin === true ) {
-          let user = message.mentions.members.first().nickname ? message.mentions.members.first() : message.mentions.users.first();
+          let user = message.mentions.members.first();
 
           if( user ) {
             sub(raidName, user, remarks, message);
@@ -389,7 +389,7 @@ client.on("message", (message) => {
     }
   }
 
-  else if ( command.toLowerCase() === "remove" ) {
+  else if ( command === "remove" ) {
     let raidInterested = smartInputDetect( args[0] );
 
     for ( var raidName in raids ) {
@@ -406,7 +406,7 @@ client.on("message", (message) => {
     }
   }
 
-  else if ( command.toLowerCase() === "ping" ) {
+  else if ( command === "ping" ) {
     let raidInterested = smartInputDetect( args[0] );
     let msg = args[1] ? "\nMessage: " + args.slice(1, args.length).join(" ") : "";
 
@@ -432,11 +432,11 @@ client.on("message", (message) => {
     }
   }
 
-  else if ( command.toLowerCase() === "show" ) {
+  else if ( command === "show" ) {
     getInterestList(message);
   }
 
-  else if ( command.toLowerCase() === "clear" || command.toLowerCase() === "refresh" ) {
+  else if ( command === "clear" || command === "refresh" ) {
     if ( isAdmin ) {
       clear(channel);
       clear(eventChannel);
@@ -477,13 +477,15 @@ function updateAllServers() {
     }, 1000);
   }
 }
-//
+
+/**************************************************************
+                  Unsub from event
+***************************************************************/
 
 function unSubEvent(eventID, player) {
   pool.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id])
   .then(function(results){
     updateEventMessage(eventID);
-    return;
   });
 }
 
@@ -495,10 +497,12 @@ function removeFromEvent(eventID, user, player) {
     if( rows[0].created_by == user.id || isAdmin ) {
       unSubEvent(eventID, player);
     }
-
-    return;
   });
 }
+
+/**************************************************************
+                  Add comment to signups
+***************************************************************/
 
 function updateEventAddComment(eventID, user, comment) {
   pool.query("UPDATE event_signup SET comment = ? WHERE event_id = ? AND user_id = ?", [comment, eventID, user.id])
@@ -506,6 +510,10 @@ function updateEventAddComment(eventID, user, comment) {
     updateEventMessage(eventID);
   });
 }
+
+/**************************************************************
+                        Join Event
+***************************************************************/
 
 function add2Event(eventID, type, user, player) {
   pool.query("SELECT * FROM event WHERE event_id = ? ", [eventID])
@@ -515,15 +523,13 @@ function add2Event(eventID, type, user, player) {
     if( rows[0].created_by == user.id || isAdmin ) {
       joinEvent(eventID, player, type, user);
     }
-
-    return;
   });
 }
 
-function joinEvent(eventID, player, type, addedByUser) {
+function joinEvent(eventID, player, type="confirmed", addedByUser="") {
   pool.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id])
   .then(function(results){
-    username = player.nickname ? player.nickname : player.username;
+    username = player.nickname ? player.nickname : player.user.username;
 
     if ( addedByUser ) {
       addedByUserName = addedByUser.nickname ? addedByUser.nickname : addedByUser.user.username;
@@ -536,6 +542,10 @@ function joinEvent(eventID, player, type, addedByUser) {
     // signupAlert(eventID, player, type);
   });
 }
+
+/**************************************************************
+                  Update existing event message
+***************************************************************/
 
 function updateEventMessage(eventID) {
   pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [eventID, serverID])
@@ -566,12 +576,18 @@ function updateEventMessage(eventID) {
   });
 }
 
+/**************************************************************
+              Text content of each event embed
+***************************************************************/
+
 function getEventInfo(event, signUps) {
+
   var signupsRows = JSON.parse(JSON.stringify(signUps));
   var confirmed = "";
   var confirmedCount = 1;
   var reserve = "";
   var reserveCount = 1;
+  var creator = event.created_by_username ? event.created_by_username : "";
 
   for(var i = 0; i < signupsRows.length; i++) {
     if( signupsRows[i].type == 'confirmed' ) {
@@ -595,6 +611,9 @@ function getEventInfo(event, signUps) {
 
   richEmbed.addField("Confirmed", confirmed, true);
   richEmbed.addField("Reserve", reserve, true);
+
+  if (creator)
+    richEmbed.addField("Created By", creator);
 
   return {
     richEmbed: richEmbed,
@@ -637,7 +656,12 @@ function getEvents() {
 
         eventChannel.send( eventInfo.richEmbed ).then(async function(message){
 
-          pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
+          client.fetchUser(event.created_by).then(function(user){
+            eventChannel.guild.fetchMember(user).then(function(member){
+              creator = member.nickname ? member.nickname : member.user.username;
+              pool.query("UPDATE event SET message_id = ?, created_by_username = ? WHERE event_id = ?", [message.id, creator, event.event_id]);
+            })
+          })
 
           if( eventInfo.confirmedCount <= 6 )
             await message.react('🆗');
@@ -650,7 +674,7 @@ function getEvents() {
 }
 
 /**************************************************************
-            Alert creator on sign up
+              Alert event creator on sign up
 ***************************************************************/
 
 function signupAlert(eventID, signup, type) {
@@ -749,38 +773,51 @@ function updateEvent(player, eventID, eventName, eventDescription) {
 ***************************************************************/
 
 function createEvent(player, eventName, eventDescription) {
-  pool.query("INSERT into event SET ?",
-      { server_id: serverID,
-        event_name: eventName,
-        event_description: eventDescription,
-        created_by: player.id,
-        date_added: moment().format('YYYY-M-D')
-      })
-  .then(function(result){
 
-    pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [result.insertId, serverID])
-    .then(function(results){
+  eventChannel.guild.fetchMember(player)
+  .then(function(member){
 
-      var rows = JSON.parse(JSON.stringify(results));
-      let event = rows[0];
+    creator = member.nickname ? member.nickname : member.user.username;
 
-      pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+    pool.query("INSERT into event SET ?",
+        { server_id: serverID,
+          event_name: eventName,
+          event_description: eventDescription,
+          created_by: player.id,
+          created_by_username: creator,
+          date_added: moment().format('YYYY-M-D')
+        })
+    .then(function(result){
+
+      eventChannel.guild.fetchMember(player)
+      .then(function(member){
+        joinEvent(result.insertId, member);
+      });
+
+      pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [result.insertId, serverID])
       .then(function(results){
 
-        eventInfo = getEventInfo(event, results);
+        var rows = JSON.parse(JSON.stringify(results));
+        let event = rows[0];
 
-        eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+        pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+        .then(function(results){
 
-          pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
+          eventInfo = getEventInfo(event, results);
 
-          if( eventInfo.confirmedCount <= 6 )
-            await message.react('🆗');
-          await message.react('🤔');
-          await message.react('⛔');
+          eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+
+            pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
+
+            if( eventInfo.confirmedCount <= 6 )
+              await message.react('🆗');
+            await message.react('🤔');
+            await message.react('⛔');
+          });
         });
       });
     });
-  });
+  })
 }
 
 /**************************************************************
@@ -832,7 +869,7 @@ async function channelCheck(guild) {
 
 function sub(raid, player, comment, message) {
 
-  username = player.nickname ? player.nickname : player.username;
+  username = player.nickname ? player.nickname : player.user.username;
 
   pool.query("DELETE FROM interest_list where raid = ? AND user_id = ? AND server_id = ?", [raid, player.id, message.guild.id])
   .then(function(results){

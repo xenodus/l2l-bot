@@ -111,23 +111,23 @@ client.on('messageReactionAdd', (reaction, user) => {
         if(reaction.emoji.name === "🆗") {
           reaction.message.guild.fetchMember(user).then(function(guildMember){
             player = guildMember.nickname ? guildMember : guildMember.user;
-            joinEvent(eventID, player, "confirmed", guildMember, message);
+            joinEvent(eventID, player, "confirmed", guildMember);
           });
         }
 
         if(reaction.emoji.name === "🤔") {
           reaction.message.guild.fetchMember(user).then(function(guildMember){
             player = guildMember.nickname ? guildMember : guildMember.user;
-            joinEvent(eventID, player, "reserve", guildMember, message);
+            joinEvent(eventID, player, "reserve", guildMember);
           });
         }
 
         if(reaction.emoji.name === "⛔") {
-          unSubEvent(eventID, user, message);
+          unSubEvent(eventID, user);
         }
 
         if(reaction.emoji.name === "❌") {
-          deleteEvent(eventID, user, message);
+          deleteEvent(eventID, user);
         }
 
         if(reaction.emoji.name === "👋") {
@@ -269,7 +269,6 @@ client.on("message", (message) => {
           type = (type == "reserve") ? "reserve" : "confirmed";
 
           if( eventID && player ) {
-            console.log( player );
             add2Event(eventID, type, message.author, player);
           }
         }
@@ -297,7 +296,7 @@ client.on("message", (message) => {
           let comment =  args.slice(2, args.length).join(" ") ? args.slice(2, args.length).join(" ") : "";
 
           if( eventID ) {
-            updateEventAddComment( eventID, player, comment );
+            updateEventAddComment( eventID, player, comment, message );
           }
         }
 
@@ -479,17 +478,10 @@ function updateAllServers() {
 }
 //
 
-function unSubEvent(eventID, player, message='') {
+function unSubEvent(eventID, player) {
   pool.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id])
   .then(function(results){
-    if( message ) {
-      updateEventMessage(eventID, message);
-    }
-    else
-    {
-      clear(eventChannel);
-      getEvents();
-    }
+    updateEventMessage(eventID);
     return;
   });
 }
@@ -510,8 +502,7 @@ function removeFromEvent(eventID, user, player) {
 function updateEventAddComment(eventID, user, comment) {
   pool.query("UPDATE event_signup SET comment = ? WHERE event_id = ? AND user_id = ?", [comment, eventID, user.id])
   .then(function(results){
-    clear(eventChannel);
-    getEvents();
+    updateEventMessage(eventID);
   });
 }
 
@@ -528,30 +519,24 @@ function add2Event(eventID, type, user, player) {
   });
 }
 
-function joinEvent(eventID, player, type, addedByUser, message='') {
+function joinEvent(eventID, player, type, addedByUser) {
   pool.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id])
   .then(function(results){
     username = player.nickname ? player.nickname : player.username;
 
     if ( addedByUser ) {
-      addedByUserName = addedByUser.nickname ? addedByUser.nickname : addedByUser.user.username;
+      addedByUserName = addedByUser.nickname ? addedByUser.nickname : addedByUser.username;
       return pool.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, added_by_user_id: addedByUser.id, added_by_username: addedByUserName, date_added: moment().format('YYYY-M-D H:m:s')});
     }
     else
       return pool.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
   }).then(function(results){
-    if( message ) {
-      updateEventMessage(eventID, message);
-    }
-    else {
-      clear(eventChannel);
-      getEvents();
-    }
+    updateEventMessage(eventID);
     // signupAlert(eventID, player, type);
   });
 }
 
-function updateEventMessage(eventID, message) {
+function updateEventMessage(eventID) {
   pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [eventID, serverID])
   .then(function(results){
     var event = JSON.parse(JSON.stringify(results));
@@ -564,12 +549,15 @@ function updateEventMessage(eventID, message) {
 
         eventInfo = getEventInfo(event[0], results);
 
-        message.clearReactions().then(function(message){
-          message.edit( eventInfo.richEmbed ).then(async function(message){
-            if( eventInfo.confirmedCount <= 6 )
-              await message.react('🆗');
-            await message.react('🤔');
-            await message.react('⛔');
+        eventChannel.fetchMessage(event[0].message_id)
+        .then(function(message){
+          message.clearReactions().then(function(message){
+            message.edit( eventInfo.richEmbed ).then(async function(message){
+              if( eventInfo.confirmedCount <= 6 )
+                await message.react('🆗');
+              await message.react('🤔');
+              await message.react('⛔');
+            });
           });
         });
       });
@@ -614,6 +602,10 @@ function getEventInfo(event, signUps) {
   };
 }
 
+/**************************************************************
+            Get and refreshes all events in channel
+***************************************************************/
+
 function getEvents() {
 
   var richEmbed = new Discord.RichEmbed()
@@ -656,6 +648,10 @@ function getEvents() {
   });
 }
 
+/**************************************************************
+            Alert creator on sign up
+***************************************************************/
+
 function signupAlert(eventID, signup, type) {
   pool.query("SELECT * FROM event WHERE event_id = ?", [eventID])
   .then(function(results){
@@ -671,6 +667,10 @@ function signupAlert(eventID, signup, type) {
     }
   });
 }
+
+/**************************************************************
+            Ping event signups via DM on 👋 reaction
+***************************************************************/
 
 function pingEventSignups(eventID) {
   pool.query("SELECT * FROM event_signup LEFT JOIN event ON event_signup.event_id = event.event_id WHERE event_signup.event_id = ? AND event.server_id = ?", [eventID, serverID])
@@ -696,7 +696,11 @@ function pingEventSignups(eventID) {
   });
 }
 
-function deleteEvent(eventID, player, message='') {
+/**************************************************************
+                !event delete or ❌ reaction
+***************************************************************/
+
+function deleteEvent(eventID, player) {
 
   pool.query("SELECT * FROM event WHERE event_id = ?", [eventID])
   .then(function(results){
@@ -707,18 +711,19 @@ function deleteEvent(eventID, player, message='') {
     }
 
     if ( isAdmin || event.created_by == player.id ) {
-      return pool.query("DELETE FROM event WHERE event_id = ?", [eventID]);
-    }
+      eventChannel.fetchMessage(event.message_id)
+      .then(function(message){
+        message.delete();
+      });
 
-  }).then(function(){
-    if( message )
-      message.delete();
-    else {
-      clear(eventChannel);
-      getEvents();
+      return pool.query("DELETE FROM event WHERE event_id = ?", [eventID]);
     }
   });
 }
+
+/**************************************************************
+                    !event edit command
+***************************************************************/
 
 function updateEvent(player, eventID, eventName, eventDescription) {
   pool.query("SELECT * FROM event WHERE event_id = ?", [eventID])
@@ -734,10 +739,13 @@ function updateEvent(player, eventID, eventName, eventDescription) {
     }
 
   }).then(function(){
-    clear(eventChannel);
-    getEvents();
+    updateEventMessage(eventID);
   });
 }
+
+/**************************************************************
+                    !event create command
+***************************************************************/
 
 function createEvent(player, eventName, eventDescription) {
   pool.query("INSERT into event SET ?",
@@ -761,6 +769,9 @@ function createEvent(player, eventName, eventDescription) {
         eventInfo = getEventInfo(event, results);
 
         eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+
+          pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
+
           if( eventInfo.confirmedCount <= 6 )
             await message.react('🆗');
           await message.react('🤔');
