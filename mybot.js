@@ -36,13 +36,13 @@ const eventHelpTxt =
   'SG-E Bot Event Commands\n------------------------\n' +
   'Enter the commands in discord channel and NOT here.\n\n' +
   'Create: !event create "event name goes here" "event description goes here"\n' +
-  'e.g. !event create "31 Dec 8PM Last Wish Speedrun" "min 550 and bring whisper"\n\n' +
+  'e.g. !event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n' +
 
   'Delete: !event delete event_id OR react with ❌ on the event\n' +
   'e.g. !event delete 5\n\n' +
 
   'Edit: !event edit event_id "event name goes here" "event description goes here"\n' +
-  'e.g. !event edit 5 "31 Dec 8PM Last Wish Speedrun" "min 550 and bring whisper"\n\n' +
+  'e.g. !event edit 5 "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n' +
 
   'Notify: React with 👋 on the event to ping all users that are signed up\n\n' +
 
@@ -631,16 +631,16 @@ function getEvents() {
   var richEmbed = new Discord.RichEmbed()
     .setTitle("Instructions")
     .setColor("#DB9834")
-    .setDescription("Sign up to raids by reacting :ok: to __confirm__ :thinking: to __reserve__ :no_entry: to __remove__ (self)");
+    .setDescription("Sign up to raids by reacting :ok: to __confirm__ :thinking: to __reserve__ :no_entry: to __withdraw__");
 
   richEmbed.addField(
     "Quick Commands",
-    'Full command list: !event help\nCreate event: !event create "31 Dec 8PM Last Wish Speedrun" "min 550 and bring whisper"\nAdd comment: !event comment event_id "comment"',
+    '__Create event__ \n!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n__Please follow the standard format__ \n"Date Time [Levi/EoW/SoS/LW/SoTP] Event Title" "Optional Description"\n\n__Full command list__ \n!event help',
     true);
 
   eventChannel.send( richEmbed );
 
-  pool.query("SELECT * FROM event WHERE server_id = ?", [serverID])
+  pool.query("SELECT * FROM event WHERE server_id = ? ORDER BY date_added ASC", [serverID])
   .then(function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
@@ -785,7 +785,7 @@ function createEvent(player, eventName, eventDescription) {
           event_description: eventDescription,
           created_by: player.id,
           created_by_username: creator,
-          date_added: moment().format('YYYY-M-D')
+          date_added: moment().format('YYYY-M-D HH:mm:ss')
         })
     .then(function(result){
 
