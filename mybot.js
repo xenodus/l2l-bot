@@ -3,7 +3,6 @@
 *******************************/
 
 const config = require('./config').production;
-const mysql = require('promise-mysql');
 const pool = config.getPool();
 
 const moment = require("moment");
@@ -494,11 +493,13 @@ function updateBotStatus() {
     .filter(members => { return members.presence.status === 'online' && members.user.bot === false })
     .map(member => { return { nickname: member.nickname, username: member.user.username }});
 
-    randomMember = members[ Math.floor(Math.random() * members.length) ];
-    randomMemberName = randomMember.nickname ? randomMember.nickname : randomMember.username;
+    if( members.length > 0 ) {
+      randomMember = members[ Math.floor(Math.random() * members.length) ];
+      randomMemberName = randomMember.nickname ? randomMember.nickname : randomMember.username;
 
-    console.log("Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
-    client.user.setPresence({ game: { name: 'Destiny 2 with ' + randomMemberName, type: "playing"}});
+      console.log("Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
+      client.user.setPresence({ game: { name: 'Destiny 2 with ' + randomMemberName, type: "playing"}});
+    }
   });
 }
 
