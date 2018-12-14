@@ -1,6 +1,6 @@
 # SG-Elites Destiny 2 Clan's Raid Bot
 
-Bot that helps manage raid events and learning list.
+Discord bot that helps manage raid events and learning list.
 
 ## Authors
 

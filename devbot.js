@@ -82,6 +82,12 @@ client.on("debug", (e) => console.info(e));
 client.on("ready", () => {
   console.log("I am ready!");
   updateAllServers();
+  client.user.setStatus('available');
+  client.user.setPresence({ game: { name: 'Destiny 2', type: "playing"}});
+
+  setInterval(function(){
+    updateBotStatus();
+  }, 30000);
 });
 
 client.on("guildCreate", guild => {
@@ -479,7 +485,25 @@ function updateAllServers() {
 }
 
 /**************************************************************
-                  Unsub from event
+      Bot Status Message - Fetching random online member
+***************************************************************/
+
+function updateBotStatus() {
+  eventChannel.guild.fetchMembers().then(function(guild){
+    members = guild.members
+    .filter(members => { return members.presence.status === 'online' && members.user.bot === false })
+    .map(member => { return { nickname: member.nickname, username: member.user.username }});
+
+    randomMember = members[ Math.floor(Math.random() * members.length) ];
+    randomMemberName = randomMember.nickname ? randomMember.nickname : randomMember.username;
+
+    console.log("Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
+    client.user.setPresence({ game: { name: 'Destiny 2 with ' + randomMemberName, type: "playing"}});
+  });
+}
+
+/**************************************************************
+                    Unsub from event
 ***************************************************************/
 
 function unSubEvent(eventID, player) {
@@ -603,14 +627,19 @@ function getEventInfo(event, signUps) {
   if ( confirmed === "" ) confirmed = "nil";
   if ( reserve === "" ) reserve = "nil";
 
+  let colors = ["#4285F4", "#DB4437", "#F4B400", "#0F9D58"];
+
   // "Event ID" string used in detection of reaction
   var richEmbed = new Discord.RichEmbed()
     .setTitle( event.event_name + " | Event ID: " + event.event_id )
-    .setColor("#DB9834")
+    // .setColor("#DB9834")
+    //.setColor( "#" + Math.random().toString(16).slice(2, 8) )
+    .setColor( colors[Math.floor(Math.random() * colors.length)] )
     .setDescription( event.event_description );
 
-  richEmbed.addField("Confirmed", confirmed, true);
+  richEmbed.addField("Confirmed" + (confirmedCount-1==6?" [Full]":""), confirmed, true);
   richEmbed.addField("Reserve", reserve, true);
+
 
   if (creator)
     richEmbed.addField("Created By", creator);
