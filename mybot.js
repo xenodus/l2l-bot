@@ -628,14 +628,14 @@ function getEventInfo(event, signUps) {
   if ( confirmed === "" ) confirmed = "nil";
   if ( reserve === "" ) reserve = "nil";
 
-  let colors = ["#4285F4", "#DB4437", "#F4B400", "#0F9D58"];
+  let color = detectRaidColor( event.event_name );
 
   // "Event ID" string used in detection of reaction
   var richEmbed = new Discord.RichEmbed()
     .setTitle( event.event_name + " | Event ID: " + event.event_id )
     // .setColor("#DB9834")
     //.setColor( "#" + Math.random().toString(16).slice(2, 8) )
-    .setColor( colors[Math.floor(Math.random() * colors.length)] )
+    .setColor( color )
     .setDescription( event.event_description );
 
   richEmbed.addField("Confirmed" + (confirmedCount-1==6?" [Full]":""), confirmed, true);
@@ -650,6 +650,21 @@ function getEventInfo(event, signUps) {
     confirmedCount: confirmedCount,
     reserveCount: reserveCount
   };
+}
+
+function detectRaidColor(eventName) {
+  if ( eventName.toLowerCase().includes("levi") )
+    return config.raidColorMapping['Levi'];
+  else if ( eventName.toLowerCase().includes("eow") || eventName.toLowerCase().includes("eater") )
+    return config.raidColorMapping['EoW'];
+  else if ( eventName.toLowerCase().includes("sos") || eventName.toLowerCase().includes("spire") )
+    return config.raidColorMapping['SoS'];
+  else if ( eventName.toLowerCase().includes("[lw]") || eventName.toLowerCase().includes("wish") )
+    return config.raidColorMapping['Wish'];
+  else if ( eventName.toLowerCase().includes("sotp") || eventName.toLowerCase().includes("scourge") )
+    return config.raidColorMapping['Scourge'];
+  else
+    return config.raidColorMapping['default'];
 }
 
 /**************************************************************
@@ -961,7 +976,7 @@ function getInterestList() {
       if ( Object.keys(raids[raid]).length > 0 ) {
         richEmbed = new Discord.RichEmbed()
         .setTitle(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")")
-        .setColor("#DB9834")
+        .setColor(config.raidColorMapping[raid])
         .setDescription('```css\n' + printUsernameRemarks( raids[raid] ) + '```');
 
         channel.send( richEmbed );
