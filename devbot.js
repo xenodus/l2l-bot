@@ -1,4 +1,4 @@
-/******************************
+  /******************************
   Variables & Libs
 *******************************/
 
@@ -685,7 +685,7 @@ function detectRaidColor(eventName) {
 
 function searchEvents(searchStr, player) {
 
-  pool.query("SELECT * FROM event WHERE server_id = ? AND event_name LIKE ? AND status = 'active' ORDER BY event_date ASC", [serverID, '%'+searchStr+'%'])
+  pool.query("SELECT * FROM event WHERE server_id = ? AND event_name LIKE ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) ORDER BY event_date ASC", [serverID, '%'+searchStr+'%'])
   .then(async function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
@@ -729,7 +729,7 @@ function getEvents() {
 
   eventChannel.send( richEmbed );
 
-  pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' ORDER BY event_date ASC", [serverID])
+  pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
   .then(async function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
