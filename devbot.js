@@ -48,6 +48,8 @@ const eventHelpTxt =
   'Add/Edit Comment: !event comment event_id "comment"\n' +
   'e.g. !event comment 5 "First timer here!"\n\n' +
 
+  'Search: !event levi/sos/eow/lw/wish/sotp/scourge\n\n' +
+
   '** Add player to event: !event add event_id @player\n' +
   'e.g. !event add 5 @player\n' +
   'e.g. !event add 5 @player reserve\n\n' +
