@@ -76,7 +76,7 @@ let serverID; // also known as guild id
 
 client.on("error", (e) => console.error(e));
 client.on("warn", (e) => console.warn(e));
-client.on("debug", (e) => console.info(e));
+//client.on("debug", (e) => console.info(e));
 
 client.on("ready", () => {
   console.log("I am ready!");
@@ -87,6 +87,12 @@ client.on("ready", () => {
   setInterval(function(){
     updateBotStatus();
   }, 30000);
+
+  setInterval(function(){
+    console.log("Refreshing events channel");
+    clear(eventChannel);
+    getEvents(); // refresh and re-sort event channel every 3 hours
+  }, 3600000*3);
 });
 
 client.on("guildCreate", guild => {
@@ -174,7 +180,7 @@ client.on("message", (message) => {
 
       // !event create "Levi Raid 20 Feb 9PM" "Bring raid banners!"
       case "create":
-        if ( args.length > 1 ) {
+        if ( args.length > 1 && args.slice(1, args.length).join("").replace(/"/g, "").length >= 10 ) {
 
           let recompose = args.slice(1, args.length).join(" ");
           let indices = []; // find the indices of the quotation marks
@@ -225,7 +231,7 @@ client.on("message", (message) => {
       // Restricted to message author or admin
       // !event edit event_id "event_name" "event_description"
       case "edit":
-        if ( args.length > 1 ) {
+        if ( args.length > 1 && args.slice(2, args.length).join("").replace(/"/g, "").length >= 10 ) {
           eventID = args[1];
 
           if ( eventID ) {
@@ -341,6 +347,10 @@ client.on("message", (message) => {
         break;
 
       default:
+        if( smartInputDetect(args[0]) ) {
+          console.log( args[0] );
+          searchEvents( args[0], message.author );
+        }
         break;
     }
   }
@@ -668,6 +678,38 @@ function detectRaidColor(eventName) {
 }
 
 /**************************************************************
+          Get events which name matches and DM user
+***************************************************************/
+
+function searchEvents(searchStr, player) {
+
+  pool.query("SELECT * FROM event WHERE server_id = ? AND event_name LIKE ? AND status = 'active' ORDER BY event_date ASC", [serverID, '%'+searchStr+'%'])
+  .then(async function(results){
+
+    var rows = JSON.parse(JSON.stringify(results));
+
+    var richEmbed = new Discord.RichEmbed()
+      .setTitle("Your search for events matching __"+searchStr+"__ resulted in " + rows.length + " results.")
+      .setColor("#DB9834");
+
+    player.send('', richEmbed);
+
+    for(var i = 0; i < rows.length; i++) {
+
+      let event = rows[i];
+
+      await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+      .then(async function(results){
+
+        eventInfo = getEventInfo(event, results);
+
+        player.send('', eventInfo.richEmbed);
+      });
+    }
+  });
+}
+
+/**************************************************************
             Get and refreshes all events in channel
 ***************************************************************/
 
@@ -685,8 +727,8 @@ function getEvents() {
 
   eventChannel.send( richEmbed );
 
-  pool.query("SELECT * FROM event WHERE server_id = ? ORDER BY date_added ASC", [serverID])
-  .then(function(results){
+  pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' ORDER BY event_date ASC", [serverID])
+  .then(async function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
 
@@ -694,12 +736,12 @@ function getEvents() {
 
       let event = rows[i];
 
-      pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
-      .then(function(results){
+      await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+      .then(async function(results){
 
         eventInfo = getEventInfo(event, results);
 
-        eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+        await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
 
           if( results.filter(row => row.type == "confirmed").length < 6 )
             await message.react('🆗');
@@ -709,7 +751,9 @@ function getEvents() {
           client.fetchUser(event.created_by).then(function(user){
             eventChannel.guild.fetchMember(user).then(function(member){
               creator = member.nickname ? member.nickname : member.user.username;
-              pool.query("UPDATE event SET message_id = ?, created_by_username = ? WHERE event_id = ?", [message.id, creator, event.event_id]);
+              event_date_string = event.event_name.trim().split(/ +/g).slice(0,2).join(' ');
+              event_date = moment( event_date_string, 'DD MMM' ).isValid() ? moment( event_date_string, 'DD MMM' ).format('2018-MM-DD') : null;
+              pool.query("UPDATE event SET message_id = ?, event_date = ?, created_by_username = ? WHERE event_id = ?", [message.id, event_date, creator, event.event_id]);
             })
           });
         });
@@ -772,7 +816,7 @@ function pingEventSignups(eventID) {
 
 function deleteEvent(eventID, player) {
 
-  pool.query("SELECT * FROM event WHERE event_id = ?", [eventID])
+  pool.query("SELECT * FROM event WHERE event_id = ? AND status = 'active'", [eventID])
   .then(function(results){
     var rows = JSON.parse(JSON.stringify(results));
 
@@ -785,8 +829,8 @@ function deleteEvent(eventID, player) {
       .then(function(message){
         message.delete();
       });
-
-      return pool.query("DELETE FROM event WHERE event_id = ?", [eventID]);
+      pool.query("DELETE FROM event_signup WHERE event_id = ?", [eventID]);
+      return pool.query("UPDATE event SET status = 'deleted' WHERE event_id = ?", [eventID]);
     }
   });
 }
@@ -805,7 +849,9 @@ function updateEvent(player, eventID, eventName, eventDescription) {
     }
 
     if ( isAdmin || event.created_by == player.id ) {
-      return pool.query("UPDATE event SET event_name = ?, event_description = ? WHERE event_id = ?", [eventName, eventDescription, eventID]);
+      event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+      event_date = moment( event_date_string, 'DD MMM' ).isValid() ? moment( event_date_string, 'DD MMM' ).format('2018-MM-DD') : null;
+      return pool.query("UPDATE event SET event_name = ?, event_description = ?, event_date = ? WHERE event_id = ?", [eventName, eventDescription, event_date, eventID]);
     }
 
   }).then(function(){
@@ -823,11 +869,14 @@ function createEvent(player, eventName, eventDescription) {
   .then(function(member){
 
     creator = member.nickname ? member.nickname : member.user.username;
+    event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+    event_date = moment( event_date_string, 'DD MMM' ).isValid() ? moment( event_date_string, 'DD MMM' ).format('2018-MM-DD') : null;
 
     pool.query("INSERT into event SET ?",
         { server_id: serverID,
           event_name: eventName,
           event_description: eventDescription,
+          event_date: event_date,
           created_by: player.id,
           created_by_username: creator,
           date_added: moment().format('YYYY-M-D HH:mm:ss')
@@ -1014,8 +1063,8 @@ function smartInputDetect(raidName) {
   var leviMatches = ['levi', 'lev', 'leviathan'];
   var eowMatches = ['eow', 'eater'];
   var sosMatches = ['sos', 'spires', 'stars'];
-  var wishMatches = ['wish', 'last', 'riven'];
-  var scourgeMatches = ['scourge', 'scorge', 'scourge of the past', 'past'];
+  var wishMatches = ['wish', 'last', 'riven', 'lw'];
+  var scourgeMatches = ['scourge', 'scorge', 'scourge of the past', 'past', 'sotp'];
 
   if( leviMatches.includes(raidName.toLowerCase()) )
     return 'Levi'
@@ -1027,7 +1076,7 @@ function smartInputDetect(raidName) {
     return 'Wish'
   else if( scourgeMatches.includes(raidName.toLowerCase()) )
     return 'Scourge'
-  else return 'dadaffsdfsdgsdg';
+  else return '';
 }
 
 client.login(config.token);
