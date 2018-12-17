@@ -158,6 +158,8 @@ client.on("message", (message) => {
 
   console.log( "Message: " + message.content + "\nBy: " + message.author.username );
 
+  message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
+
   isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.id == "198636356623269888" || message.member.id == "154572358051430400") ? true : false;
   serverID = message.guild.id;
 
@@ -241,7 +243,7 @@ client.on("message", (message) => {
       // !event edit event_id "event_name" "event_description"
       case "edit":
         if ( args.length > 1 ) {
-          eventID = args[1];
+          let eventID = parseInt(args[1]);
 
           if ( eventID ) {
             let recompose = args.slice(2, args.length).join(" ");
@@ -278,7 +280,7 @@ client.on("message", (message) => {
             event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
 
             if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
-              message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
+              message.author.send('Edit event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event edit event_id "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
               break;
             }
 
@@ -290,12 +292,13 @@ client.on("message", (message) => {
       // Add users to events !event add event_id @user confirmed|reserve
       case "add":
         if ( args.length > 1 && message.mentions.users.first() ) {
-          let eventID = args[1];
+          let eventID = parseInt(args[1]);
           let player = message.mentions.users.first();
           let type = args[3] ? args[3] : "";
           type = (type == "reserve") ? "reserve" : "confirmed";
 
           if( eventID && player ) {
+            console.log( 'yay' );
             message.guild.fetchMember(player)
             .then(function(member){
               add2Event(eventID, type, message.member, member);
@@ -308,7 +311,7 @@ client.on("message", (message) => {
       // Add users to events !event remove event_id @user
       case "remove":
         if ( args.length > 1 && message.mentions.users.first() ) {
-          let eventID = args[1];
+          let eventID = parseInt(args[1]);
           let player = message.mentions.users.first();
 
           if( eventID && player ) {
@@ -321,7 +324,7 @@ client.on("message", (message) => {
       // !event comment 5 Petra's run maybe?
       case "comment":
         if ( args.length > 1 ) {
-          let eventID = args[1];
+          let eventID = parseInt(args[1]);
           let player = message.author;
           let comment =  args.slice(2, args.length).join(" ") ? args.slice(2, args.length).join(" ") : "";
 
@@ -336,7 +339,7 @@ client.on("message", (message) => {
       // !event sub event_id
       case "sub":
         if ( args.length > 1 ) {
-          let eventID = args[1];
+          let eventID = parseInt(args[1]);
           joinEvent(eventID,  message.member);
         }
 
@@ -346,7 +349,7 @@ client.on("message", (message) => {
       // !event unsub event_id
       case "unsub":
         if ( args.length > 1 ) {
-          let eventID = args[1];
+          let eventID = parseInt(args[1]);
           unSubEvent(eventID, message.author);
         }
 
@@ -364,7 +367,6 @@ client.on("message", (message) => {
 
       default:
         if( smartInputDetect(args[0]) ) {
-          console.log( args[0] );
           searchEvents( args[0], message.author );
         }
         break;
@@ -523,7 +525,7 @@ function updateBotStatus() {
       randomMember = members[ Math.floor(Math.random() * members.length) ];
       randomMemberName = randomMember.nickname ? randomMember.nickname : randomMember.username;
 
-      console.log("Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
+      // console.log("Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
       client.user.setPresence({ game: { name: 'Destiny 2 with ' + randomMemberName, type: "playing"}});
     }
   });
@@ -1007,6 +1009,10 @@ function unSubAll(raid, message) {
   });
 }
 
+/**************************************************************
+              Update existing message on sub / unsub
+***************************************************************/
+
 function updateInterestList(raid) {
 
   channel.fetchMessages().then(function(messages){
@@ -1029,10 +1035,11 @@ function updateInterestList(raid) {
         var richEmbed = new Discord.RichEmbed()
         .setTitle(config.raidNameMapping[raid] + " ("+rows.length+")")
         .setColor(config.raidColorMapping[raid])
-        .setDescription( '`' + printUsernameRemarks( r ) + '`');
+        .setDescription( printUsernameRemarks( r ) );
 
         if( message_id == '' ) {
-          channel.send( richEmbed );
+          //channel.send( richEmbed );
+          getInterestList();
         }
         else {
           channel.fetchMessage(message_id).then(function(message){
@@ -1052,6 +1059,10 @@ function updateInterestList(raid) {
     });
   });
 }
+
+/**************************************************************
+                Refresh channel with results
+***************************************************************/
 
 function getInterestList() {
 
@@ -1099,7 +1110,7 @@ function getInterestList() {
         richEmbed = new Discord.RichEmbed()
         .setTitle(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")")
         .setColor(config.raidColorMapping[raid])
-        .setDescription( '`' + printUsernameRemarks( raids[raid] ) + '`');
+        .setDescription( printUsernameRemarks( raids[raid] ) );
 
         channel.send( richEmbed );
       }
@@ -1112,13 +1123,13 @@ function printUsernameRemarks( raid ) {
   let i = 1;
 
   for ( name in raid ) {
-    txt += name;
+    txt += "• " + name;
     txt += raid[name] ? " - "+raid[name]+"" : "";
     txt += "\n"
     i++;
   }
 
-  return txt;
+  return '`' + txt + '`';
 }
 
 /**************************************************************
