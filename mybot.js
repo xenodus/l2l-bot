@@ -1,4 +1,4 @@
-  /******************************
+/******************************
   Variables & Libs
 *******************************/
 
@@ -182,7 +182,7 @@ client.on("message", (message) => {
 
       // !event create "Levi Raid 20 Feb 9PM" "Bring raid banners!"
       case "create":
-        if ( args.length > 1 && args.slice(1, args.length).join("").replace(/"/g, "").length >= 10 ) {
+        if ( args.length > 1 ) {
 
           let recompose = args.slice(1, args.length).join(" ");
           let indices = []; // find the indices of the quotation marks
@@ -215,6 +215,13 @@ client.on("message", (message) => {
             eventName = args[1];
           }
 
+          event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+
+          if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
+            message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
+            break;
+          }
+
           createEvent(message.author, eventName, eventDescription);
         }
 
@@ -233,7 +240,7 @@ client.on("message", (message) => {
       // Restricted to message author or admin
       // !event edit event_id "event_name" "event_description"
       case "edit":
-        if ( args.length > 1 && args.slice(2, args.length).join("").replace(/"/g, "").length >= 10 ) {
+        if ( args.length > 1 ) {
           eventID = args[1];
 
           if ( eventID ) {
@@ -266,6 +273,13 @@ client.on("message", (message) => {
             }
             else {
               eventName = args[2];
+            }
+
+            event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+
+            if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
+              message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
+              break;
             }
 
             updateEvent(message.author, eventID, eventName, eventDescription);
@@ -671,7 +685,7 @@ function detectRaidColor(eventName) {
     return config.raidColorMapping['EoW'];
   else if ( eventName.toLowerCase().includes("sos") || eventName.toLowerCase().includes("spire") )
     return config.raidColorMapping['SoS'];
-  else if ( eventName.toLowerCase().includes("[lw]") || eventName.toLowerCase().includes("wish") )
+  else if ( eventName.toLowerCase().includes("lw") || eventName.toLowerCase().includes("wish") )
     return config.raidColorMapping['Wish'];
   else if ( eventName.toLowerCase().includes("sotp") || eventName.toLowerCase().includes("scourge") )
     return config.raidColorMapping['Scourge'];
@@ -727,6 +741,7 @@ function getEvents() {
     '__Create event__ \n!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n__Please follow the standard format__ \n"Date Time [Levi/EoW/SoS/LW/SoTP] Event Title" "Optional Description"\n\n__Full command list__ \n!event help',
     true);
 
+  eventChannel.send( "If you're unable to see anything in this channel, make sure User Settings > Text & Images > Link Preview is checked." );
   eventChannel.send( richEmbed );
 
   pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])

@@ -1,4 +1,4 @@
-  /******************************
+/******************************
   Variables & Libs
 *******************************/
 
@@ -182,7 +182,7 @@ client.on("message", (message) => {
 
       // !event create "Levi Raid 20 Feb 9PM" "Bring raid banners!"
       case "create":
-        if ( args.length > 1 && args.slice(1, args.length).join("").replace(/"/g, "").length >= 10 ) {
+        if ( args.length > 1 ) {
 
           let recompose = args.slice(1, args.length).join(" ");
           let indices = []; // find the indices of the quotation marks
@@ -215,6 +215,13 @@ client.on("message", (message) => {
             eventName = args[1];
           }
 
+          event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+
+          if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
+            message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
+            break;
+          }
+
           createEvent(message.author, eventName, eventDescription);
         }
 
@@ -233,7 +240,7 @@ client.on("message", (message) => {
       // Restricted to message author or admin
       // !event edit event_id "event_name" "event_description"
       case "edit":
-        if ( args.length > 1 && args.slice(2, args.length).join("").replace(/"/g, "").length >= 10 ) {
+        if ( args.length > 1 ) {
           eventID = args[1];
 
           if ( eventID ) {
@@ -266,6 +273,13 @@ client.on("message", (message) => {
             }
             else {
               eventName = args[2];
+            }
+
+            event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+
+            if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
+              message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
+              break;
             }
 
             updateEvent(message.author, eventID, eventName, eventDescription);
@@ -671,7 +685,7 @@ function detectRaidColor(eventName) {
     return config.raidColorMapping['EoW'];
   else if ( eventName.toLowerCase().includes("sos") || eventName.toLowerCase().includes("spire") )
     return config.raidColorMapping['SoS'];
-  else if ( eventName.toLowerCase().includes("[lw]") || eventName.toLowerCase().includes("wish") )
+  else if ( eventName.toLowerCase().includes("lw") || eventName.toLowerCase().includes("wish") )
     return config.raidColorMapping['Wish'];
   else if ( eventName.toLowerCase().includes("sotp") || eventName.toLowerCase().includes("scourge") )
     return config.raidColorMapping['Scourge'];
@@ -727,6 +741,7 @@ function getEvents() {
     '__Create event__ \n!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n__Please follow the standard format__ \n"Date Time [Levi/EoW/SoS/LW/SoTP] Event Title" "Optional Description"\n\n__Full command list__ \n!event help',
     true);
 
+  eventChannel.send( "If you're unable to see anything in this channel, make sure User Settings > Text & Images > Link Preview is checked." );
   eventChannel.send( richEmbed );
 
   pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
@@ -971,21 +986,70 @@ function sub(raid, player, comment, message) {
   .then(function(results){
     return pool.query("INSERT into interest_list SET ?", {raid: raid, username: username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
   }).then(function(results){
-    getInterestList();
+    updateInterestList(raid);
+    // getInterestList();
   });
 }
 
 function unSub(raid, player, message) {
   pool.query("DELETE FROM interest_list where raid = ? AND user_id = ? AND server_id = ?", [raid, player.id, message.guild.id])
   .then(function(results){
-    getInterestList();
+    updateInterestList(raid);
+    //getInterestList();
   });
 }
 
 function unSubAll(raid, message) {
   pool.query("DELETE FROM interest_list where raid = ? AND server_id = ?", [raid, message.guild.id])
   .then(function(results){
-    getInterestList();
+    updateInterestList(raid);
+    //getInterestList();
+  });
+}
+
+function updateInterestList(raid) {
+
+  channel.fetchMessages().then(function(messages){
+    // Getting message id of current message in channel by matching raid name in embed title
+    let raid_name = config.raidNameMapping[raid];
+    let message_id = messages.filter(message => { if( message.embeds[0] ) return message.embeds[0].title.includes(raid_name) }).map(message => { return message.id });
+
+    pool.query("SELECT * FROM interest_list WHERE server_id = ? AND raid = ?", [serverID, raid])
+    .then(function(results){
+      var rows = JSON.parse(JSON.stringify(results));
+
+      if( rows.length > 0 ) {
+
+        var r = [];
+
+        for( var i = 0; i < rows.length; i++ ) {
+          r[ rows[i].username ] = rows[i]['comment'] ? rows[i]['comment'] : "";
+        }
+
+        var richEmbed = new Discord.RichEmbed()
+        .setTitle(config.raidNameMapping[raid] + " ("+rows.length+")")
+        .setColor(config.raidColorMapping[raid])
+        .setDescription( '`' + printUsernameRemarks( r ) + '`');
+
+        if( message_id == '' ) {
+          channel.send( richEmbed );
+        }
+        else {
+          channel.fetchMessage(message_id).then(function(message){
+            message.edit(richEmbed);
+          });
+        }
+      }
+      // Nobody on interest list
+      else {
+        // Remove message
+        if( message_id != '' ) {
+          channel.fetchMessage(message_id).then(function(message){
+            message.delete();
+          });
+        }
+      }
+    });
   });
 }
 
@@ -1018,7 +1082,14 @@ function getInterestList() {
     var richEmbed = new Discord.RichEmbed()
       .setTitle("Teaching Raid LFG")
       .setColor("#DB9834")
-      .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learn.");
+      .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learn.\n\n" +
+        "__Commands__\n" +
+        "Subscribe - !sub levi/eow/sos/wish/scourge comments\n" +
+        "Unsubscribe - !unsub levi/eow/sos/wish/scourge\n\n" +
+        "__Admin/Mods only__\n" +
+        "Add - !add levi/eow/sos/wish/scourge @user\n" +
+        "Remove - !remove levi/eow/sos/wish/scourge @user\n" +
+        "Ping - !ping levi/eow/sos/wish/scourge message");
 
     channel.send( richEmbed );
 
@@ -1028,29 +1099,23 @@ function getInterestList() {
         richEmbed = new Discord.RichEmbed()
         .setTitle(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")")
         .setColor(config.raidColorMapping[raid])
-        .setDescription('```css\n' + printUsernameRemarks( raids[raid] ) + '```');
+        .setDescription( '`' + printUsernameRemarks( raids[raid] ) + '`');
 
         channel.send( richEmbed );
       }
     }
-
-    // Commands
-    richEmbed = new Discord.RichEmbed()
-    .setTitle(helpTxt.name)
-    .setColor("#DB9834")
-    .setDescription(helpTxt.value);
-
-    channel.send( richEmbed );
   });
 }
 
 function printUsernameRemarks( raid ) {
-  var txt = '';
+  let txt = '';
+  let i = 1;
 
   for ( name in raid ) {
-    txt += "• " + name;
+    txt += name;
     txt += raid[name] ? " - "+raid[name]+"" : "";
-    txt += "\n";
+    txt += "\n"
+    i++;
   }
 
   return txt;
