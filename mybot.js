@@ -114,40 +114,40 @@ client.on('messageReactionAdd', (reaction, user) => {
 
   channelCheck(reaction.message.guild);
 
-    if( reaction.message.channel.name != eventChannelName ) return;
+  if( reaction.message.channel.name != eventChannelName ) return;
 
-    message = reaction.message;
-    eventName = message.embeds[0].message.embeds[0].title ? message.embeds[0].message.embeds[0].title : "";
+  message = reaction.message;
+  eventName = message.embeds[0].message.embeds[0].title ? message.embeds[0].message.embeds[0].title : "";
 
-    if( eventName ) {
-      eventID = eventName.split("Event ID: ")[1] ? eventName.split("Event ID: ")[1] : 0;
+  if( eventName ) {
+    eventID = eventName.split("Event ID: ")[1] ? eventName.split("Event ID: ")[1] : 0;
 
-      if( eventID ) {
-        if(reaction.emoji.name === "🆗") {
-          reaction.message.guild.fetchMember(user).then(function(guildMember){
-            joinEvent(eventID, guildMember, "confirmed", guildMember);
-          });
-        }
+    if( eventID ) {
+      if(reaction.emoji.name === "🆗") {
+        reaction.message.guild.fetchMember(user).then(function(guildMember){
+          joinEvent(eventID, guildMember, "confirmed", guildMember);
+        });
+      }
 
-        if(reaction.emoji.name === "🤔") {
-          reaction.message.guild.fetchMember(user).then(function(guildMember){
-            joinEvent(eventID, guildMember, "reserve", guildMember);
-          });
-        }
+      if(reaction.emoji.name === "🤔") {
+        reaction.message.guild.fetchMember(user).then(function(guildMember){
+          joinEvent(eventID, guildMember, "reserve", guildMember);
+        });
+      }
 
-        if(reaction.emoji.name === "⛔") {
-          unSubEvent(eventID, user);
-        }
+      if(reaction.emoji.name === "⛔") {
+        unSubEvent(eventID, user);
+      }
 
-        if(reaction.emoji.name === "❌") {
-          deleteEvent(eventID, user);
-        }
+      if(reaction.emoji.name === "❌") {
+        deleteEvent(eventID, user);
+      }
 
-        if(reaction.emoji.name === "👋") {
-          pingEventSignups(eventID);
-        }
+      if(reaction.emoji.name === "👋") {
+        pingEventSignups(eventID);
       }
     }
+  }
 });
 
 client.on("message", (message) => {
@@ -383,23 +383,27 @@ client.on("message", (message) => {
   *****************************/
 
   else if ( command === "sub" ) {
-    let raidInterested = smartInputDetect( args[0] );
-    let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
+    if( args[0] ) {
+      let raidInterested = smartInputDetect( args[0] );
+      let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
 
-    for ( var raidName in raids ) {
-      if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
-        sub(raidName, message.member, remarks, message);
+      for ( var raidName in raids ) {
+        if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
+          sub(raidName, message.member, remarks, message);
+        }
       }
     }
   }
 
   else if ( command === "unsub" ) {
-    let raidInterested = smartInputDetect( args[0] );
-    let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
+    if( args[0] ) {
+      let raidInterested = smartInputDetect( args[0] );
+      let remarks = args[1] ? args.slice(1, args.length).join(" ") : "";
 
-    for ( var raidName in raids ) {
-      if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
-        unSub(raidName, message.member, message);
+      for ( var raidName in raids ) {
+        if ( raidInterested.toLowerCase() === raidName.toLowerCase() ) {
+          unSub(raidName, message.member, message);
+        }
       }
     }
   }
@@ -710,7 +714,7 @@ function searchEvents(searchStr, player) {
       .setTitle("Your search for events matching __"+searchStr+"__ resulted in " + rows.length + " results.")
       .setColor("#DB9834");
 
-    player.send('', richEmbed);
+    player.send(richEmbed);
 
     for(var i = 0; i < rows.length; i++) {
 
@@ -721,7 +725,7 @@ function searchEvents(searchStr, player) {
 
         eventInfo = getEventInfo(event, results);
 
-        player.send('', eventInfo.richEmbed);
+        player.send(eventInfo.richEmbed);
       });
     }
   });
@@ -942,8 +946,8 @@ async function channelCheck(guild) {
   let channelCategoryID;
 
   if( channelCategoryExists === null )
-    await guild.createChannel(channelCategoryName, "category").then(function(newChannel){
-      channelCategoryID = newChannel.id;
+    await guild.createChannel(channelCategoryName, "category").then(async function(newChannel){
+      channelCategoryID = await newChannel.id;
     });
   else
     channelCategoryID = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category").id;
@@ -951,10 +955,10 @@ async function channelCheck(guild) {
   let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( channelExists === null )
-    await guild.createChannel(channelName, "text").then(function(newChannel){
+    await guild.createChannel(channelName, "text").then(async function(newChannel){
       newChannel.setParent( channelCategoryID );
       channelID = newChannel.id;
-      channel = client.channels.get(channelID);
+      channel = await client.channels.get(channelID);
     });
   else {
     channelID = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
@@ -964,10 +968,10 @@ async function channelCheck(guild) {
   let eventChannelExists = guild.channels.find(channel => channel.name == eventChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( eventChannelExists === null )
-    await guild.createChannel(eventChannelName, "text").then(function(newChannel){
+    await guild.createChannel(eventChannelName, "text").then(async function(newChannel){
       newChannel.setParent( channelCategoryID );
       eventChannelID = newChannel.id;
-      eventChannel = client.channels.get(eventChannelID);
+      eventChannel = await client.channels.get(eventChannelID);
     });
   else {
     eventChannelID = guild.channels.find(channel => channel.name == eventChannelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
@@ -1136,7 +1140,7 @@ function printUsernameRemarks( raid ) {
                     Parse Raid Names
 ***************************************************************/
 
-function smartInputDetect(raidName) {
+function smartInputDetect(raidName='') {
 
   var leviMatches = ['levi', 'lev', 'leviathan'];
   var eowMatches = ['eow', 'eater'];

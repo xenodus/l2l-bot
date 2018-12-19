@@ -1,0 +1,35 @@
+{
+  "name": "sge-discord",
+  "version": "1.0.0",
+  "description": "Discord bot that helps manage raid events and learning list.",
+  "main": "config.js",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "bufferutil": "^3.0.5",
+    "discord.js": "^11.4.2",
+    "erlpack": "^0.1.0",
+    "libsodium-wrappers": "^0.7.3",
+    "moment": "^2.22.2",
+    "mysql": "^2.16.0",
+    "node-opus": "^0.2.9",
+    "opusscript": "^0.0.6",
+    "promise-mysql": "^3.3.1",
+    "sodium": "github:paixaop/node-sodium",
+    "the-traveler": "^0.7.4",
+    "uws": "^9.148.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xenodus/l2l-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xenodus/l2l-bot/issues"
+  },
+  "homepage": "https://github.com/xenodus/l2l-bot#readme"
+}
