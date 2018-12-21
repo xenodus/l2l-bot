@@ -11,23 +11,27 @@ const client = new Discord.Client();
 
 let raids = {
   'Levi': [],
+  'PLevi': [],
   'EoW': [],
   'SoS': [],
   'Wish': [],
-  'Scourge': []
+  'Riven': [],
+  'Scourge': [],
 };
 
 const helpTxt = {
   name: 'Commands',
-  value:   '```' +
-  'Subscribe - !sub levi/eow/sos/wish/scourge comments\n' +
-  'Unsubscribe - !unsub levi/eow/sos/wish/scourge\n\n' +
+  value:
+  'Subscribe to let clan sherpas know you\'re interested in learning a certain raid so they can get in touch should they organize a learning run. Except for legit Riven, you will be automatically removed once a raid completion has been detected.\n\n' +
+  "Quick Commands\n" +
+  '-----------------------\n' +
+  'Subscribe - !sub levi/plevi/eow/sos/wish/riven/scourge comments\n' +
+  'Unsubscribe - !unsub levi/plevi/eow/sos/wish/riven/scourge\n\n' +
   'Admin/Mods only\n' +
   '-----------------------\n' +
-  'Add - !add levi/eow/sos/wish/scourge @user\n' +
-  'Remove - !remove levi/eow/sos/wish/scourge @user\n' +
-  'Ping - !ping levi/eow/sos/wish/scourge message\n' +
-  '```'
+  'Add - !add levi/plevi/eow/sos/wish/riven/scourge @user\n' +
+  'Remove - !remove levi/plevi/eow/sos/wish/riven/scourge @user\n' +
+  'Ping - !ping levi/plevi/eow/sos/wish/riven/scourge message\n'
 }
 
 const eventHelpTxt =
@@ -81,7 +85,7 @@ client.on("warn", (e) => console.warn(e));
 //client.on("debug", (e) => console.info(e));
 
 client.on("ready", () => {
-  console.log("I am ready!");
+  console.log(timestampPrefix() + "I am ready!");
   updateAllServers();
   client.user.setStatus('available');
   client.user.setPresence({ game: { name: 'Destiny 2', type: "playing"}});
@@ -91,14 +95,14 @@ client.on("ready", () => {
   }, 30000);
 
   setInterval(function(){
-    console.log("Refreshing events channel");
+    console.log(timestampPrefix() + "Refreshing events channel");
     clear(eventChannel);
     getEvents(); // refresh and re-sort event channel every 3 hours
   }, 3600000*3);
 });
 
 client.on("guildCreate", guild => {
-    console.log("Joined a new guild: " + guild.name);
+    console.log(timestampPrefix() + "Joined a new guild: " + guild.name);
     serverID = guild.id;
     channelCheck(guild);
 });
@@ -108,7 +112,7 @@ client.on('messageReactionAdd', (reaction, user) => {
   if ( reaction.message.guild === null ) return; // Disallow DM
   if ( user.bot ) return;
 
-  console.log( reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
+  console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
 
   serverID = reaction.message.guild.id;
 
@@ -156,7 +160,7 @@ client.on("message", (message) => {
   if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
-  console.log( "Message: " + message.content + "\nBy: " + message.author.username );
+  console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
 
   message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
 
@@ -298,7 +302,6 @@ client.on("message", (message) => {
           type = (type == "reserve") ? "reserve" : "confirmed";
 
           if( eventID && player ) {
-            console.log( 'yay' );
             message.guild.fetchMember(player)
             .then(function(member){
               add2Event(eventID, type, message.member, member);
@@ -501,6 +504,10 @@ async function clear(channel) {
   }
 }
 
+function timestampPrefix() {
+  return "[" + moment().format() + "] ";
+}
+
 function updateAllServers() {
   for( var guild of client.guilds.values() ) {
     serverID = guild.id;
@@ -529,7 +536,7 @@ function updateBotStatus() {
       randomMember = members[ Math.floor(Math.random() * members.length) ];
       randomMemberName = randomMember.nickname ? randomMember.nickname : randomMember.username;
 
-      // console.log("Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
+      // console.log(timestampPrefix() + "Updated bot status: " + "Playing Destiny 2 with " + randomMemberName);
       client.user.setPresence({ game: { name: 'Destiny 2 with ' + randomMemberName, type: "playing"}});
     }
   });
@@ -540,6 +547,7 @@ function updateBotStatus() {
 ***************************************************************/
 
 function unSubEvent(eventID, player) {
+  console.log( timestampPrefix() + "Unsubbed from event ID: " + eventID );
   pool.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id])
   .then(function(results){
     updateEventMessage(eventID);
@@ -552,6 +560,7 @@ function removeFromEvent(eventID, user, player) {
     var rows = JSON.parse(JSON.stringify(results));
 
     if( rows[0].created_by == user.id || isAdmin ) {
+      console.log( timestampPrefix() + "Removed from event ID: " + eventID );
       unSubEvent(eventID, player);
     }
   });
@@ -578,6 +587,7 @@ function add2Event(eventID, type, user, player) {
     var rows = JSON.parse(JSON.stringify(results));
 
     if( rows[0].created_by == user.id || isAdmin ) {
+      console.log( timestampPrefix() + "Added to event ID: " + eventID );
       joinEvent(eventID, player, type, user);
     }
   });
@@ -587,6 +597,8 @@ function joinEvent(eventID, player, type="confirmed", addedByUser="") {
   pool.query("DELETE FROM event_signup where event_id = ? AND user_id = ?", [eventID, player.id])
   .then(function(results){
     username = player.nickname ? player.nickname : player.user.username;
+
+    console.log( timestampPrefix() + "Joining event ID: " + eventID );
 
     if ( addedByUser ) {
       addedByUserName = addedByUser.nickname ? addedByUser.nickname : addedByUser.user.username;
@@ -665,8 +677,6 @@ function getEventInfo(event, signUps) {
   // "Event ID" string used in detection of reaction
   var richEmbed = new Discord.RichEmbed()
     .setTitle( event.event_name + " | Event ID: " + event.event_id )
-    // .setColor("#DB9834")
-    //.setColor( "#" + Math.random().toString(16).slice(2, 8) )
     .setColor( color )
     .setDescription( event.event_description );
 
@@ -764,7 +774,11 @@ function getEvents() {
 
         eventInfo = getEventInfo(event, results);
 
+        console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + ' "' + event.event_name + '" By: ' + event.created_by_username );
+
         await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+
+        console.log( timestampPrefix() + 'Message ID: ' + message.id );
 
           if( results.filter(row => row.type == "confirmed").length < 6 )
             await message.react('🆗');
@@ -846,13 +860,17 @@ function deleteEvent(eventID, player) {
     if ( rows[0] ) {
       event = rows[0];
     }
+    else
+      return;
 
     if ( isAdmin || event.created_by == player.id ) {
+      console.log( timestampPrefix() + 'Deleted Event ID: ' + eventID + ' "' + event.event_name + '"');
+
       eventChannel.fetchMessage(event.message_id)
       .then(function(message){
         message.delete();
       });
-      pool.query("DELETE FROM event_signup WHERE event_id = ?", [eventID]);
+      // pool.query("DELETE FROM event_signup WHERE event_id = ?", [eventID]);
       return pool.query("UPDATE event SET status = 'deleted' WHERE event_id = ?", [eventID]);
     }
   });
@@ -993,7 +1011,7 @@ function sub(raid, player, comment, message) {
     return pool.query("INSERT into interest_list SET ?", {raid: raid, username: username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
   }).then(function(results){
     updateInterestList(raid);
-    // getInterestList();
+    //getInterestList();
   });
 }
 
@@ -1022,7 +1040,7 @@ function updateInterestList(raid) {
   channel.fetchMessages().then(function(messages){
     // Getting message id of current message in channel by matching raid name in embed title
     let raid_name = config.raidNameMapping[raid];
-    let message_id = messages.filter(message => { if( message.embeds[0] ) return message.embeds[0].title.includes(raid_name) }).map(message => { return message.id });
+    let message_id = messages.filter(message => { if( message.embeds[0] ) return message.embeds[0].title == (raid_name + " - !sub " + raid) }).map(message => { return message.id });
 
     pool.query("SELECT * FROM interest_list WHERE server_id = ? AND raid = ?", [serverID, raid])
     .then(function(results){
@@ -1037,8 +1055,9 @@ function updateInterestList(raid) {
         }
 
         var richEmbed = new Discord.RichEmbed()
-        .setTitle(config.raidNameMapping[raid] + " ("+rows.length+")")
+        .setTitle(config.raidNameMapping[raid] + " - !sub " + raid)
         .setColor(config.raidColorMapping[raid])
+        .setImage(config.raidImgs[raid])
         .setDescription( printUsernameRemarks( r ) );
 
         if( message_id == '' ) {
@@ -1072,13 +1091,15 @@ function getInterestList() {
 
   raids = {
     'Levi': [],
+    'PLevi': [],
     'EoW': [],
     'SoS': [],
     'Wish': [],
-    'Scourge': []
+    'Riven': [],
+    'Scourge': [],
   };
 
-  pool.query("SELECT * FROM interest_list WHERE server_id = ?", [serverID])
+  pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [serverID])
   .then(function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
@@ -1095,16 +1116,9 @@ function getInterestList() {
 
     // Instructions
     var richEmbed = new Discord.RichEmbed()
-      .setTitle("Teaching Raid LFG")
+      .setTitle("Teaching Raid LFG Instructions")
       .setColor("#DB9834")
-      .setDescription("Subscribe to let mods / sherpas know when and what raids you're interested to learn.\n\n" +
-        "__Commands__\n" +
-        "Subscribe - !sub levi/eow/sos/wish/scourge comments\n" +
-        "Unsubscribe - !unsub levi/eow/sos/wish/scourge\n\n" +
-        "__Admin/Mods only__\n" +
-        "Add - !add levi/eow/sos/wish/scourge @user\n" +
-        "Remove - !remove levi/eow/sos/wish/scourge @user\n" +
-        "Ping - !ping levi/eow/sos/wish/scourge message");
+      .setDescription(helpTxt.value);
 
     channel.send( richEmbed );
 
@@ -1112,8 +1126,9 @@ function getInterestList() {
     for ( var raid in raids ) {
       if ( Object.keys(raids[raid]).length > 0 ) {
         richEmbed = new Discord.RichEmbed()
-        .setTitle(config.raidNameMapping[raid] + " ("+Object.keys(raids[raid]).length+")")
+        .setTitle(config.raidNameMapping[raid] + " - !sub " + raid)
         .setColor(config.raidColorMapping[raid])
+        .setImage(config.raidImgs[raid])
         .setDescription( printUsernameRemarks( raids[raid] ) );
 
         channel.send( richEmbed );
@@ -1143,19 +1158,25 @@ function printUsernameRemarks( raid ) {
 function smartInputDetect(raidName='') {
 
   var leviMatches = ['levi', 'lev', 'leviathan'];
+  var pleviMatches = ['plevi'];
   var eowMatches = ['eow', 'eater'];
   var sosMatches = ['sos', 'spires', 'stars'];
-  var wishMatches = ['wish', 'last', 'riven', 'lw'];
+  var wishMatches = ['wish', 'last', 'lw'];
+  var rivenMatches = ['riven', 'legit'];
   var scourgeMatches = ['scourge', 'scorge', 'scourge of the past', 'past', 'sotp'];
 
   if( leviMatches.includes(raidName.toLowerCase()) )
     return 'Levi'
+  if( pleviMatches.includes(raidName.toLowerCase()) )
+    return 'PLevi'
   else if( eowMatches.includes(raidName.toLowerCase()) )
     return 'EoW'
   else if( sosMatches.includes(raidName.toLowerCase()) )
     return 'SoS'
   else if( wishMatches.includes(raidName.toLowerCase()) )
     return 'Wish'
+  else if( rivenMatches.includes(raidName.toLowerCase()) )
+    return 'Riven'
   else if( scourgeMatches.includes(raidName.toLowerCase()) )
     return 'Scourge'
   else return '';

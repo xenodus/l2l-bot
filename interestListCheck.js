@@ -1,12 +1,13 @@
 const config = require('./config').production;
 const pool = config.getPool();
+const moment = require("moment");
 var Traveler = require('the-traveler').default;
 let axios = require('axios');
 
 const traveler = new Traveler({
     apikey: config.bungieAPIKey,
     userAgent: 'alvinyeoh', //used to identify your request to the API
-    debug: true
+    debug: false
 });
 
 // Concat with Destiny membershipID
@@ -27,22 +28,27 @@ var membershipType = 4;
 
 var interestList = {
 	'Levi': [],
+	'PLevi': [],
 	'EoW': [],
 	'SoS': [],
 	'Wish': [],
+	'Riven': [],
 	'Scourge': [],
 }
 
 var interestList2Purge = {
 	'Levi': [],
+	'PLevi': [],
 	'EoW': [],
 	'SoS': [],
 	'Wish': [],
 	'Scourge': [],
 }
 
+console.log( "---------- Begin Purge Check at " + moment().format() + " ----------" );
+
 // Get interest list
-pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND comment = '' ORDER BY raid", [372462137651757066]).then(async function(results){
+pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND raid != 'Riven' ORDER BY raid", [372462137651757066]).then(async function(results){
 	var rows = JSON.parse(JSON.stringify(results));
 
 	if( rows.length > 0 ) {
@@ -64,9 +70,12 @@ pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND com
 		for( username in interestList2Purge[raid] ) {
 			//console.log( username );
 			//console.log( interestList2Purge[raid][username] );
-			//pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, 372462137651757066, raid]);
+			pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, 372462137651757066, raid]);
 		}
 	}
+
+	console.log( "---------- Exit Purge Check at " + moment().format() + " ----------" );
+	process.exit();
 });
 
 async function purgeCheck(username, raidname) {
@@ -107,6 +116,7 @@ async function purgeCheck(username, raidname) {
 						raidExperienceThreshold = 1;
 						var db2completionMap = {
 							'Levi': 'levi',
+							'PLevi': 'levip',
 							'EoW': 'eow',
 							'SoS': 'sos',
 							'Wish': 'lw',
