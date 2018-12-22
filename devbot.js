@@ -221,9 +221,9 @@ client.on("message", (message) => {
             eventName = args[1];
           }
 
-          event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+          event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
 
-          if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
+          if( moment( event_date_string, 'DD MMM h:mmA' ).isValid() === false || eventName.length < 7 ) {
             message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
             break;
           }
@@ -281,9 +281,9 @@ client.on("message", (message) => {
               eventName = args[2];
             }
 
-            event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
+            event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
 
-            if( moment( event_date_string, 'DD MMM' ).isValid() === false || eventName.length < 7 ) {
+            if( moment( event_date_string, 'DD MMM h:mmA' ).isValid() === false || eventName.length < 7 ) {
               message.author.send('Edit event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event edit event_id "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
               break;
             }
@@ -627,19 +627,22 @@ function updateEventMessage(eventID) {
       pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? AND event.server_id = ? ORDER BY event_signup.date_added ASC", [eventID, serverID])
       .then(function(results){
 
-        eventInfo = getEventInfo(event[0], results);
+        if( event[0].message_id > 0 ) {
 
-        eventChannel.fetchMessage(event[0].message_id)
-        .then(function(message){
-          message.clearReactions().then(function(message){
-            message.edit( eventInfo.richEmbed ).then(async function(message){
-              if( results.filter(row => row.type == "confirmed").length < 6 )
-                await message.react('🆗');
-              await message.react('🤔');
-              await message.react('⛔');
+          eventInfo = getEventInfo(event[0], results);
+
+          eventChannel.fetchMessage(event[0].message_id)
+          .then(function(message){
+            message.clearReactions().then(function(message){
+              message.edit( eventInfo.richEmbed ).then(async function(message){
+                if( results.filter(row => row.type == "confirmed").length < 6 )
+                  await message.react('🆗');
+                await message.react('🤔');
+                await message.react('⛔');
+              });
             });
           });
-        });
+        }
       });
     }
   });
@@ -760,7 +763,7 @@ function getEvents() {
   eventChannel.send( "If you're unable to see anything in this channel, make sure User Settings > Text & Images > Link Preview is checked." );
   eventChannel.send( richEmbed );
 
-  pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
+  pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
   .then(async function(results){
 
     var rows = JSON.parse(JSON.stringify(results));
@@ -788,8 +791,8 @@ function getEvents() {
           client.fetchUser(event.created_by).then(function(user){
             eventChannel.guild.fetchMember(user).then(function(member){
               creator = member.nickname ? member.nickname : member.user.username;
-              event_date_string = event.event_name.trim().split(/ +/g).slice(0,2).join(' ');
-              event_date = moment( event_date_string, 'DD MMM' ).isValid() ? moment( event_date_string, 'DD MMM' ).format('2018-MM-DD') : null;
+              event_date_string = event.event_name.trim().split(/ +/g).slice(0,3).join(' ');
+              event_date = moment( event_date_string, 'DD MMM h:mmA' ).isValid() ? moment( event_date_string, 'DD MMM h:mmA' ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
               pool.query("UPDATE event SET message_id = ?, event_date = ?, created_by_username = ? WHERE event_id = ?", [message.id, event_date, creator, event.event_id]);
             })
           });
@@ -890,8 +893,8 @@ function updateEvent(player, eventID, eventName, eventDescription) {
     }
 
     if ( isAdmin || event.created_by == player.id ) {
-      event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
-      event_date = moment( event_date_string, 'DD MMM' ).isValid() ? moment( event_date_string, 'DD MMM' ).format('2018-MM-DD') : null;
+      event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
+      event_date = moment( event_date_string, 'DD MMM h:mmA' ).isValid() ? moment( event_date_string, 'DD MMM h:mmA' ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
       return pool.query("UPDATE event SET event_name = ?, event_description = ?, event_date = ? WHERE event_id = ?", [eventName, eventDescription, event_date, eventID]);
     }
 
@@ -910,8 +913,8 @@ function createEvent(player, eventName, eventDescription) {
   .then(function(member){
 
     creator = member.nickname ? member.nickname : member.user.username;
-    event_date_string = eventName.trim().split(/ +/g).slice(0,2).join(' ');
-    event_date = moment( event_date_string, 'DD MMM' ).isValid() ? moment( event_date_string, 'DD MMM' ).format('2018-MM-DD') : null;
+    event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
+    event_date = moment( event_date_string, 'DD MMM h:mmA' ).isValid() ? moment( event_date_string, 'DD MMM h:mmA' ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
 
     pool.query("INSERT into event SET ?",
         { server_id: serverID,
