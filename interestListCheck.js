@@ -68,9 +68,13 @@ pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND rai
 
 	for( raid in interestList2Purge ) {
 		for( username in interestList2Purge[raid] ) {
-			//console.log( username );
+			console.log( username );
+			console.log( raid );
 			//console.log( interestList2Purge[raid][username] );
-			pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, 372462137651757066, raid]);
+			pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, 372462137651757066, raid])
+			.then(function(r){
+				console.log(r);
+			});
 		}
 	}
 

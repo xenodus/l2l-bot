@@ -19,6 +19,8 @@ let raids = {
   'Scourge': [],
 };
 
+const eventDatetimeFormat = 'DD MMM h:mmA';
+
 const helpTxt = {
   name: 'Commands',
   value:
@@ -164,7 +166,7 @@ client.on("message", (message) => {
 
   message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
 
-  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.id == "198636356623269888" || message.member.id == "154572358051430400") ? true : false;
+  isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(message.member.id) || Object.keys(config.sherpaIDs).includes(message.member.id)) ? true : false;
   serverID = message.guild.id;
 
   channelCheck(message.guild);
@@ -218,12 +220,13 @@ client.on("message", (message) => {
             eventDescription = recompose.substring(parseInt(indices[2]) + 1, indices[3]);
           }
           else {
-            eventName = args[1];
+            eventName = args.slice(1, args.length).join(" ");
+            eventName = eventName.replace(/"/g,'');
           }
 
-          event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
+          event_date_string = getEventDatetimeString(eventName);
 
-          if( moment( event_date_string, 'DD MMM h:mmA' ).isValid() === false || eventName.length < 7 ) {
+          if( isEventDatetimeValid(event_date_string) === false || eventName.length < 7 ) {
             message.author.send('Create event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
             break;
           }
@@ -281,9 +284,9 @@ client.on("message", (message) => {
               eventName = args[2];
             }
 
-            event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
+            event_date_string = getEventDatetimeString(eventName);
 
-            if( moment( event_date_string, 'DD MMM h:mmA' ).isValid() === false || eventName.length < 7 ) {
+            if( isEventDatetimeValid(event_date_string) === false || eventName.length < 7 ) {
               message.author.send('Edit event failed with command: ' + message.content + '\n' + 'Please follow the format: ' + '!event edit event_id "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"');
               break;
             }
@@ -491,7 +494,7 @@ client.on("message", (message) => {
 });
 
 /******************************
-  Functions
+  Helper Functions
 *******************************/
 
 async function clear(channel) {
@@ -506,6 +509,14 @@ async function clear(channel) {
 
 function timestampPrefix() {
   return "[" + moment().format() + "] ";
+}
+
+function getEventDatetimeString(eventName) {
+  return eventName.trim().split(/ +/g).slice(0,3).join(' ');
+}
+
+function isEventDatetimeValid(event_date_string) {
+  return moment(event_date_string, eventDatetimeFormat).isValid();
 }
 
 function updateAllServers() {
@@ -791,9 +802,9 @@ function getEvents() {
           client.fetchUser(event.created_by).then(function(user){
             eventChannel.guild.fetchMember(user).then(function(member){
               creator = member.nickname ? member.nickname : member.user.username;
-              event_date_string = event.event_name.trim().split(/ +/g).slice(0,3).join(' ');
-              event_date = moment( event_date_string, 'DD MMM h:mmA' ).isValid() ? moment( event_date_string, 'DD MMM h:mmA' ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
-              pool.query("UPDATE event SET message_id = ?, event_date = ?, created_by_username = ? WHERE event_id = ?", [message.id, event_date, creator, event.event_id]);
+              //event_date_string = getEventDatetimeString(event.event_name);
+              //event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+              pool.query("UPDATE event SET message_id = ?, created_by_username = ? WHERE event_id = ?", [message.id, creator, event.event_id]);
             })
           });
         });
@@ -893,8 +904,18 @@ function updateEvent(player, eventID, eventName, eventDescription) {
     }
 
     if ( isAdmin || event.created_by == player.id ) {
-      event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
-      event_date = moment( event_date_string, 'DD MMM h:mmA' ).isValid() ? moment( event_date_string, 'DD MMM h:mmA' ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+      event_date_string = getEventDatetimeString(eventName);
+      event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+
+    // Future Check
+    if( event_date ) {
+      e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+
+      if( moment().diff( e, 'days' ) > 0 ) {
+        event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
+      }
+    }
+
       return pool.query("UPDATE event SET event_name = ?, event_description = ?, event_date = ? WHERE event_id = ?", [eventName, eventDescription, event_date, eventID]);
     }
 
@@ -913,8 +934,17 @@ function createEvent(player, eventName, eventDescription) {
   .then(function(member){
 
     creator = member.nickname ? member.nickname : member.user.username;
-    event_date_string = eventName.trim().split(/ +/g).slice(0,3).join(' ');
-    event_date = moment( event_date_string, 'DD MMM h:mmA' ).isValid() ? moment( event_date_string, 'DD MMM h:mmA' ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+    event_date_string = getEventDatetimeString(eventName);
+    event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+
+    // Future Check
+    if( event_date ) {
+      e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+
+      if( moment().diff( e, 'days' ) > 0 ) {
+        event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
+      }
+    }
 
     pool.query("INSERT into event SET ?",
         { server_id: serverID,
