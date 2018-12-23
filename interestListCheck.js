@@ -12,6 +12,7 @@ const traveler = new Traveler({
 
 // Concat with Destiny membershipID
 const raidReportURL = 'https://b9bv2wd97h.execute-api.us-west-2.amazonaws.com/prod/api/player/';
+const serverID = 372462137651757066;
 
 var raidActivityHash = {
 	'levi': [2693136600, 2693136601, 2693136602, 2693136603, 2693136604, 2693136605],
@@ -48,7 +49,7 @@ var interestList2Purge = {
 console.log( "---------- Begin Purge Check at " + moment().format() + " ----------" );
 
 // Get interest list
-pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND raid != 'Riven' ORDER BY raid", [372462137651757066]).then(async function(results){
+pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND raid != 'Riven' ORDER BY raid", [serverID]).then(async function(results){
 	var rows = JSON.parse(JSON.stringify(results));
 
 	if( rows.length > 0 ) {
@@ -68,13 +69,11 @@ pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND rai
 
 	for( raid in interestList2Purge ) {
 		for( username in interestList2Purge[raid] ) {
-			console.log( username );
-			console.log( raid );
+			//console.log( username );
+			//console.log( raid );
 			//console.log( interestList2Purge[raid][username] );
-			pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, 372462137651757066, raid])
-			.then(function(r){
-				console.log(r);
-			});
+
+			await pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, serverID, raid]);
 		}
 	}
 

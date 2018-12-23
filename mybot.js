@@ -1041,7 +1041,7 @@ function updateInterestList(raid) {
         .setDescription( printUsernameRemarks(r) );
 
         if(config.raidGuides[raid])
-          richEmbed.setFooter('[Guide]('+config.raidGuides[raid]+')');
+          richEmbed.setURL(config.raidGuides[raid]);
 
         if( message_id == '' ) {
           getInterestList();
