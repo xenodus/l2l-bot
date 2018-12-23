@@ -4,11 +4,13 @@
 
 const config = require('./config').production;
 const pool = config.getPool();
-
 const moment = require("moment");
 const Discord = require("discord.js");
 const client = new Discord.Client();
 
+const eventDatetimeFormat = 'DD MMM h:mmA';
+
+let isAdmin = false;
 let raids = {
   'Levi': [],
   'PLevi': [],
@@ -19,63 +21,17 @@ let raids = {
   'Scourge': [],
 };
 
-const eventDatetimeFormat = 'DD MMM h:mmA';
-
-const helpTxt = {
-  name: 'Commands',
-  value:
-  'Subscribe to let clan sherpas know you\'re interested in learning a certain raid so they can get in touch should they organize a learning run. Except for legit Riven, you will be automatically removed once a raid completion has been detected.\n\n' +
-  "Quick Commands\n" +
-  '-----------------------\n' +
-  'Subscribe - !sub levi/plevi/eow/sos/wish/riven/scourge comments\n' +
-  'Unsubscribe - !unsub levi/plevi/eow/sos/wish/riven/scourge\n\n' +
-  'Admin/Mods only\n' +
-  '-----------------------\n' +
-  'Add - !add levi/plevi/eow/sos/wish/riven/scourge @user\n' +
-  'Remove - !remove levi/plevi/eow/sos/wish/riven/scourge @user\n' +
-  'Ping - !ping levi/plevi/eow/sos/wish/riven/scourge message\n'
-}
-
-const eventHelpTxt =
-  '```' +
-  'SG-E Bot Event Commands\n------------------------\n' +
-  'Enter the commands in discord channel and NOT here.\n\n' +
-  'Create: !event create "event name goes here" "event description goes here"\n' +
-  'e.g. !event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n' +
-
-  'Delete: !event delete event_id OR react with ❌ on the event\n' +
-  'e.g. !event delete 5\n\n' +
-
-  'Edit: !event edit event_id "event name goes here" "event description goes here"\n' +
-  'e.g. !event edit 5 "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n' +
-
-  'Notify: React with 👋 on the event to ping all users that are signed up\n\n' +
-
-  'Add/Edit Comment: !event comment event_id "comment"\n' +
-  'e.g. !event comment 5 "First timer here!"\n\n' +
-
-  'Search: !event levi/sos/eow/lw/wish/sotp/scourge\n\n' +
-
-  '** Add player to event: !event add event_id @player\n' +
-  'e.g. !event add 5 @player\n' +
-  'e.g. !event add 5 @player reserve\n\n' +
-
-  '** Remove player from event: !event remove event_id @player\n' +
-  'e.g. !event remove 5 @player\n\n' +
-
-  '** Only applicable for admins, mods and event creator' +
-  '```';
-
-let isAdmin = false;
-
 // Channels
 const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
 const eventChannelName = "raid_lfg"; // no spaces all lower case
+const pvpChannelName = "pvp_lfg"; // no spaces all lower case
 let channelID;
 let eventChannelID;
+let pvpChannelID;
 let channel;
 let eventChannel;
+let pvpChannel;
 let serverID; // also known as guild id
 
 /******************************
@@ -362,7 +318,7 @@ client.on("message", (message) => {
 
       // !event help
       case "help":
-        message.author.send(eventHelpTxt);
+        message.author.send(config.eventHelpTxt);
         break;
 
       case "clear":
@@ -1082,10 +1038,12 @@ function updateInterestList(raid) {
         .setTitle(config.raidNameMapping[raid] + " - !sub " + raid)
         .setColor(config.raidColorMapping[raid])
         .setThumbnail(config.raidImgs[raid])
-        .setDescription( printUsernameRemarks( r ) );
+        .setDescription( printUsernameRemarks(r) );
+
+        if(config.raidGuides[raid])
+          richEmbed.setFooter('[Guide]('+config.raidGuides[raid]+')');
 
         if( message_id == '' ) {
-          //channel.send( richEmbed );
           getInterestList();
         }
         else {
@@ -1142,7 +1100,7 @@ function getInterestList() {
     var richEmbed = new Discord.RichEmbed()
       .setTitle("Teaching Raid LFG Instructions")
       .setColor("#DB9834")
-      .setDescription(helpTxt.value);
+      .setDescription(config.interestListHelpTxt);
 
     channel.send( richEmbed );
 
@@ -1154,6 +1112,9 @@ function getInterestList() {
         .setColor(config.raidColorMapping[raid])
         .setThumbnail(config.raidImgs[raid])
         .setDescription( printUsernameRemarks( raids[raid] ) );
+
+        if(config.raidGuides[raid])
+          richEmbed.setURL(config.raidGuides[raid]);
 
         channel.send( richEmbed );
       }
