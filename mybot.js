@@ -98,7 +98,6 @@ client.on("ready", () => {
 
   setInterval(function(){
     console.log(timestampPrefix() + "Refreshing events channel");
-    clear(eventChannel);
     getEvents(); // refresh and re-sort event channel every 3 hours
   }, 3600000*3);
 });
@@ -367,7 +366,6 @@ client.on("message", (message) => {
         break;
 
       case "clear":
-        clear(eventChannel);
         getEvents();
         break;
 
@@ -481,8 +479,6 @@ client.on("message", (message) => {
 
   else if ( command === "clear" || command === "refresh" ) {
     if ( isAdmin ) {
-      clear(channel);
-      clear(eventChannel);
       getInterestList();
       getEvents();
     }
@@ -525,8 +521,6 @@ function updateAllServers() {
     channelCheck(guild);
 
     setTimeout(function () {
-      clear(channel);
-      clear(eventChannel);
       getInterestList();
       getEvents();
     }, 1000);
@@ -761,6 +755,8 @@ function searchEvents(searchStr, player) {
 
 function getEvents() {
 
+  clear(eventChannel);
+
   var richEmbed = new Discord.RichEmbed()
     .setTitle("Instructions")
     .setColor("#DB9834")
@@ -802,8 +798,6 @@ function getEvents() {
           client.fetchUser(event.created_by).then(function(user){
             eventChannel.guild.fetchMember(user).then(function(member){
               creator = member.nickname ? member.nickname : member.user.username;
-              //event_date_string = getEventDatetimeString(event.event_name);
-              //event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
               pool.query("UPDATE event SET message_id = ?, created_by_username = ? WHERE event_id = ?", [message.id, creator, event.event_id]);
             })
           });
@@ -1044,7 +1038,6 @@ function sub(raid, player, comment, message) {
     return pool.query("INSERT into interest_list SET ?", {raid: raid, username: username, user_id: player.id, comment: comment, server_id: message.guild.id, date_added: moment().format('YYYY-M-D')});
   }).then(function(results){
     updateInterestList(raid);
-    //getInterestList();
   });
 }
 
@@ -1052,7 +1045,6 @@ function unSub(raid, player, message) {
   pool.query("DELETE FROM interest_list where raid = ? AND user_id = ? AND server_id = ?", [raid, player.id, message.guild.id])
   .then(function(results){
     updateInterestList(raid);
-    //getInterestList();
   });
 }
 
@@ -1060,7 +1052,6 @@ function unSubAll(raid, message) {
   pool.query("DELETE FROM interest_list where raid = ? AND server_id = ?", [raid, message.guild.id])
   .then(function(results){
     updateInterestList(raid);
-    //getInterestList();
   });
 }
 
@@ -1090,7 +1081,7 @@ function updateInterestList(raid) {
         var richEmbed = new Discord.RichEmbed()
         .setTitle(config.raidNameMapping[raid] + " - !sub " + raid)
         .setColor(config.raidColorMapping[raid])
-        .setImage(config.raidImgs[raid])
+        .setThumbnail(config.raidImgs[raid])
         .setDescription( printUsernameRemarks( r ) );
 
         if( message_id == '' ) {
@@ -1161,7 +1152,7 @@ function getInterestList() {
         richEmbed = new Discord.RichEmbed()
         .setTitle(config.raidNameMapping[raid] + " - !sub " + raid)
         .setColor(config.raidColorMapping[raid])
-        .setImage(config.raidImgs[raid])
+        .setThumbnail(config.raidImgs[raid])
         .setDescription( printUsernameRemarks( raids[raid] ) );
 
         channel.send( richEmbed );
