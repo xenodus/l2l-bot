@@ -8,9 +8,17 @@ const moment = require("moment");
 const Discord = require("discord.js");
 const client = new Discord.Client();
 
+var Traveler = require('the-traveler').default;
+const traveler = new Traveler({
+    apikey: config.bungieAPIKey,
+    userAgent: 'alvinyeoh', //used to identify your request to the API
+    debug: false
+});
+
 const eventDatetimeFormat = 'DD MMM h:mmA';
 
 let isAdmin = false;
+let isClanMember = false;
 let raids = {
   'Levi': [],
   'PLevi': [],
@@ -114,7 +122,7 @@ client.on('messageReactionAdd', (reaction, user) => {
 client.on("message", (message) => {
 
   if ( message.author.bot ) return;
-  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
+  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name && message.channel.name != pvpChannel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
   console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
@@ -122,6 +130,7 @@ client.on("message", (message) => {
   message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
 
   isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(message.member.id) || Object.keys(config.sherpaIDs).includes(message.member.id)) ? true : false;
+  isClanMember = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.roles.find(roles => roles.name === "Clan 1") || message.member.roles.find(roles => roles.name === "Clan 2")) ? true : false;
   serverID = message.guild.id;
 
   channelCheck(message.guild);
@@ -440,6 +449,66 @@ client.on("message", (message) => {
     }
   }
 
+  if( message.channel == pvpChannel ) {
+    if ( command === "pvp" ) {
+
+      switch ( args[0] ) {
+        case "sub":
+          if( args.length > 1 && message.mentions.users.first() ) {
+            player = message.mentions.users.first();
+
+            message.guild.fetchMember(player)
+            .then(function(member){
+              subPVPList(member);
+            });
+          }
+          else
+            subPVPList(message.member);
+
+          displayPVPList(pvpChannel)
+          .then(function(){
+            message.delete();
+          });
+          return;
+
+        case "unsub":
+          if( args.length > 1 && message.mentions.users.first() ) {
+            player = message.mentions.users.first();
+
+            message.guild.fetchMember(player)
+            .then(function(member){
+              unsubPVPList(member);
+            })
+          }
+          else
+            unsubPVPList(message.member);
+
+          displayPVPList(pvpChannel)
+          .then(function(){
+            message.delete();
+          });
+          return;
+
+        case "ping":
+          if( args.length > 1 ) {
+            let msg = args[1] ? args.slice(1, args.length).join(" ") : "";
+            pingPVPList(msg, message.member);
+          }
+
+          message.delete();
+          return;
+
+        case "list":
+        default:
+          displayPVPList(pvpChannel)
+          .then(function(){
+            message.delete();
+          });
+          return;
+      }
+    }
+  }
+
   // Delete message after processed to keep channels clean
   if ( message.channel === eventChannel || message.channel === channel )
     message.delete();
@@ -457,6 +526,29 @@ async function clear(channel) {
   catch(e) {
     return;
   }
+}
+
+async function displayPVPList(channel) {
+  await clearBotMessages(channel)
+  .then(function(){
+    pvpChannel.startTyping();
+    getPVPList().then(function(){
+      pvpChannel.stopTyping();
+    });
+  })
+}
+
+async function clearBotMessages(channel) {
+  let c = channel;
+
+  await channel.fetchMessages({limit: 99})
+  .then(function(messages){
+    messages = messages.filter(m => { return m.author.bot == true && (m.embeds.length == 0 || m.embeds[0].author.name == 'PvP Interest List') });
+    c.bulkDelete(messages);
+  })
+  .catch(function(e){
+    console.log(e);
+  });
 }
 
 function timestampPrefix() {
@@ -569,7 +661,6 @@ function joinEvent(eventID, player, type="confirmed", addedByUser="") {
       return pool.query("INSERT into event_signup SET ?", {event_id: eventID, username: username, user_id: player.id, type: type, date_added: moment().format('YYYY-M-D H:m:s')});
   }).then(function(results){
     updateEventMessage(eventID);
-    // signupAlert(eventID, player, type);
   });
 }
 
@@ -943,6 +1034,7 @@ function createEvent(player, eventName, eventDescription) {
 ***************************************************************/
 
 async function channelCheck(guild) {
+  // Category Check
   let channelCategoryExists = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category");
   let channelCategoryID;
 
@@ -953,6 +1045,7 @@ async function channelCheck(guild) {
   else
     channelCategoryID = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category").id;
 
+  // Interest List Channel Check
   let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( channelExists === null )
@@ -966,6 +1059,7 @@ async function channelCheck(guild) {
     channel = client.channels.get(channelID);
   }
 
+  // Event Channel Check
   let eventChannelExists = guild.channels.find(channel => channel.name == eventChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( eventChannelExists === null )
@@ -977,6 +1071,20 @@ async function channelCheck(guild) {
   else {
     eventChannelID = guild.channels.find(channel => channel.name == eventChannelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
     eventChannel = client.channels.get(eventChannelID);
+  }
+
+  // Event Channel Check
+  let pvpChannelExists = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
+
+  if( pvpChannelExists === null )
+    await guild.createChannel(pvpChannelName, "text").then(async function(newChannel){
+      newChannel.setParent( channelCategoryID );
+      pvpChannelID = newChannel.id;
+      pvpChannel = await client.channels.get(pvpChannelID);
+    });
+  else {
+    pvpChannelID = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
+    pvpChannel = client.channels.get(pvpChannelID);
   }
 }
 
@@ -1165,6 +1273,146 @@ function smartInputDetect(raidName='') {
   else if( scourgeMatches.includes(raidName.toLowerCase()) )
     return 'Scourge'
   else return '';
+}
+
+/**************************************************************
+                    PVP List Sub
+***************************************************************/
+
+async function subPVPList(player, comment='') {
+  let username = player.nickname ? player.nickname : player.user.username;
+
+  await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
+  .then(async function(r){
+    await pool.query("INSERT INTO pvp_interest_list SET ?", {server_id: serverID, username: username, user_id: player.id, date_added: moment().format('YYYY-MM-DD')})
+    .then(function(r){
+      console.log( timestampPrefix() + username + " subbed for PVP List" );
+    });
+  });
+}
+
+/**************************************************************
+                    PVP List Unsub
+***************************************************************/
+
+async function unsubPVPList(player, comment='') {
+  let username = player.nickname ? player.nickname : player.user.username;
+  let user_id = player.id;
+
+  await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
+  .then(function(r){
+    console.log( timestampPrefix() + username + " unsubbed from PVP List" );
+  });
+}
+
+/**************************************************************
+                    PVP List Show
+***************************************************************/
+
+async function getPVPList() {
+  await pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
+  .then(async function(results){
+    var rows = JSON.parse(JSON.stringify(results));
+
+    if( rows.length > 0 ) {
+
+      await getPVPStats(rows).then(async function(data){
+        var richEmbed = new Discord.RichEmbed()
+          .setColor("#DC143C")
+          .setAuthor("PvP Interest List", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
+          .setTimestamp();
+
+        richEmbed.addField("ID", data.playerNames, true);
+        richEmbed.addField("Glory / Valor Points", data.playerGloryValorPoints, true);
+        richEmbed.addField("Last Login", data.playerLastLogin, true);
+        richEmbed.addBlankField()
+        richEmbed.addField("Commands", "`Show list - !pvp\nSub - !pvp sub and !pvp sub @user\nUnsub - !pvp unsub and !pvp unsub @user\nPing list - !pvp ping your message here`");
+
+        console.log( timestampPrefix() + "Displaying PVP List" );
+        await pvpChannel.send(richEmbed);
+      });
+    }
+    else {
+      await pvpChannel.send("Nobody is on the PVP interest list :slight_frown:");
+    }
+  })
+  .catch(function(e){
+    console.log(e);
+  });
+  return;
+}
+
+async function getPVPStats(rows) {
+  const glory_hash = 2000925172; // competitive
+  const valor_hash = 3882308435; // quickplay
+  const infamy_hash = 2772425241; // gambit
+  const membershipType = 4;
+
+  let data = {
+    playerNames: '',
+    playerGloryValorPoints: '',
+    playerLastLogin: ''
+  };
+
+  for ( var i=0; i<rows.length; i++ ) {
+    let username = rows[i].username;
+    let userID = rows[i].user_id;
+    let vPt = '';
+    let gPt = '';
+    let iPt = '';
+    let lastLogin = '-';
+
+    await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username))
+    .then(async function(response){
+
+      if( response.Response[0] && response.Response[0].membershipId ) {
+        let membershipId = response.Response[0].membershipId;
+
+        await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']})
+        .then(async function(r){
+          if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
+            let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
+            iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
+            vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
+            gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
+            lastLogin = r.Response.profile.data.dateLastPlayed;
+            lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '-';
+          }
+        });
+      }
+    });
+
+    data.playerNames += username + '\n';
+    data.playerGloryValorPoints += (gPt=='' && vPt =='') ? "-\n" : gPt + " / " + vPt +"\n";
+    data.playerLastLogin += lastLogin + "\n";
+  }
+
+  return data;
+}
+
+function pingPVPList(msg, creator) {
+  pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
+  .then(function(results){
+    let playerIDs = '';
+    var rows = JSON.parse(JSON.stringify(results));
+
+    if( rows.length > 0 ) {
+      for(var i=0;i<rows.length;i++) {
+        playerIDs += "<@"+rows[i].user_id+"> ";
+      }
+
+      let creator_name = creator.nickname ? creator.nickname : creator.user.username;
+
+      var richEmbed = new Discord.RichEmbed()
+        .setColor("#DC143C")
+        .setAuthor(creator_name, creator.user.avatarURL)
+        .setDescription(msg);
+
+      richEmbed.addField(":wave:", playerIDs);
+
+      pvpChannel.send(richEmbed);
+    }
+  });
 }
 
 client.login(config.token);

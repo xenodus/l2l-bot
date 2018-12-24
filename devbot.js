@@ -450,55 +450,63 @@ client.on("message", (message) => {
   }
 
   if( message.channel == pvpChannel ) {
-	  if ( command === "pvp" ) {
+    if ( command === "pvp" ) {
 
-	    switch ( args[0] ) {
-	    	case "sub":
-	    		if( args[1] && isClanMember && message.mentions.users.first() ) {
-	    			player = message.mentions.users.first();
+      switch ( args[0] ) {
+        case "sub":
+          if( args.length > 1 && message.mentions.users.first() ) {
+            player = message.mentions.users.first();
 
             message.guild.fetchMember(player)
             .then(function(member){
               subPVPList(member);
-            })
-	    		}
-	    		else
-	    			subPVPList(message.member);
+            });
+          }
+          else
+            subPVPList(message.member);
 
-	    		message.delete();
-	    		return;
+          displayPVPList(pvpChannel)
+          .then(function(){
+            message.delete();
+          });
+          return;
 
-    		case "unsub":
-	    		if( args[1] && isClanMember && message.mentions.users.first() ) {
-	    			player = message.mentions.users.first();
+        case "unsub":
+          if( args.length > 1 && message.mentions.users.first() ) {
+            player = message.mentions.users.first();
 
             message.guild.fetchMember(player)
             .then(function(member){
               unsubPVPList(member);
             })
-	    		}
-	    		else
-    				unsubPVPList(message.member);
+          }
+          else
+            unsubPVPList(message.member);
 
-    			message.delete();
-    			return;
+          displayPVPList(pvpChannel)
+          .then(function(){
+            message.delete();
+          });
+          return;
 
-  			case "ping":
-  				let msg = args[1] ? args.slice(1, args.length).join(" ") : "";
-  				if( isClanMember && args.length > 1 ) {
-  					pingPVPList(msg, message.member);
-  				}
+        case "ping":
+          if( args.length > 1 ) {
+            let msg = args[1] ? args.slice(1, args.length).join(" ") : "";
+            pingPVPList(msg, message.member);
+          }
 
-  				return;
+          message.delete();
+          return;
 
-  			case "list":
-  			default:
-  				getPVPList().then(function(){
-						message.delete();
-  				});
-  				return;
-	    }
-	  }
+        case "list":
+        default:
+          displayPVPList(pvpChannel)
+          .then(function(){
+            message.delete();
+          });
+          return;
+      }
+    }
   }
 
   // Delete message after processed to keep channels clean
@@ -520,16 +528,39 @@ async function clear(channel) {
   }
 }
 
+async function displayPVPList(channel) {
+  await clearBotMessages(channel)
+  .then(function(){
+    pvpChannel.startTyping();
+    getPVPList().then(function(){
+      pvpChannel.stopTyping();
+    });
+  })
+}
+
+async function clearBotMessages(channel) {
+  let c = channel;
+
+  await channel.fetchMessages({limit: 99})
+  .then(function(messages){
+    messages = messages.filter(m => { return m.author.bot == true && (m.embeds.length == 0 || m.embeds[0].author.name == 'PvP Interest List') });
+    c.bulkDelete(messages);
+  })
+  .catch(function(e){
+    console.log(e);
+  });
+}
+
 function timestampPrefix() {
   return "[" + moment().format() + "] ";
 }
 
 function getEventDatetimeString(eventName) {
-	return eventName.trim().split(/ +/g).slice(0,3).join(' ');
+  return eventName.trim().split(/ +/g).slice(0,3).join(' ');
 }
 
 function isEventDatetimeValid(event_date_string) {
-	return moment(event_date_string, eventDatetimeFormat).isValid();
+  return moment(event_date_string, eventDatetimeFormat).isValid();
 }
 
 function updateAllServers() {
@@ -919,11 +950,11 @@ function updateEvent(player, eventID, eventName, eventDescription) {
 
     // Future Check
     if( event_date ) {
-    	e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+      e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
 
-    	if( moment().diff( e, 'days' ) > 0 ) {
-    		event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
-    	}
+      if( moment().diff( e, 'days' ) > 0 ) {
+        event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
+      }
     }
 
       return pool.query("UPDATE event SET event_name = ?, event_description = ?, event_date = ? WHERE event_id = ?", [eventName, eventDescription, event_date, eventID]);
@@ -949,11 +980,11 @@ function createEvent(player, eventName, eventDescription) {
 
     // Future Check
     if( event_date ) {
-    	e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+      e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
 
-    	if( moment().diff( e, 'days' ) > 0 ) {
-    		event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
-    	}
+      if( moment().diff( e, 'days' ) > 0 ) {
+        event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
+      }
     }
 
     pool.query("INSERT into event SET ?",
@@ -1003,7 +1034,7 @@ function createEvent(player, eventName, eventDescription) {
 ***************************************************************/
 
 async function channelCheck(guild) {
-	// Category Check
+  // Category Check
   let channelCategoryExists = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category");
   let channelCategoryID;
 
@@ -1118,7 +1149,7 @@ function updateInterestList(raid) {
         .setDescription( printUsernameRemarks(r) );
 
         if(config.raidGuides[raid])
-        	richEmbed.setURL(config.raidGuides[raid]);
+          richEmbed.setURL(config.raidGuides[raid]);
 
         if( message_id == '' ) {
           getInterestList();
@@ -1191,7 +1222,7 @@ function getInterestList() {
         .setDescription( printUsernameRemarks( raids[raid] ) );
 
         if(config.raidGuides[raid])
-        	richEmbed.setURL(config.raidGuides[raid]);
+          richEmbed.setURL(config.raidGuides[raid]);
 
         channel.send( richEmbed );
       }
@@ -1253,10 +1284,10 @@ async function subPVPList(player, comment='') {
 
   await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
   .then(async function(r){
-		await pool.query("INSERT INTO pvp_interest_list SET ?", {server_id: serverID, username: username, user_id: player.id, date_added: moment().format('YYYY-MM-DD')})
-		.then(function(r){
-			console.log( timestampPrefix() + username + " subbed for PVP List" );
-		});
+    await pool.query("INSERT INTO pvp_interest_list SET ?", {server_id: serverID, username: username, user_id: player.id, date_added: moment().format('YYYY-MM-DD')})
+    .then(function(r){
+      console.log( timestampPrefix() + username + " subbed for PVP List" );
+    });
   });
 }
 
@@ -1268,10 +1299,10 @@ async function unsubPVPList(player, comment='') {
   let username = player.nickname ? player.nickname : player.user.username;
   let user_id = player.id;
 
-	await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
-	.then(function(r){
-		console.log( timestampPrefix() + username + " unsubbed from PVP List" );
-	});
+  await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
+  .then(function(r){
+    console.log( timestampPrefix() + username + " unsubbed from PVP List" );
+  });
 }
 
 /**************************************************************
@@ -1279,103 +1310,109 @@ async function unsubPVPList(player, comment='') {
 ***************************************************************/
 
 async function getPVPList() {
-	await pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
-	.then(async function(results){
+  await pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
+  .then(async function(results){
     var rows = JSON.parse(JSON.stringify(results));
 
     if( rows.length > 0 ) {
 
       await getPVPStats(rows).then(async function(data){
-		    var richEmbed = new Discord.RichEmbed()
-		      .setColor("#DC143C")
-		      .setAuthor("PvP Interest List", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
-		      .setTimestamp();
+        var richEmbed = new Discord.RichEmbed()
+          .setColor("#DC143C")
+          .setAuthor("PvP Interest List", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
+          .setTimestamp();
 
-	      richEmbed.addField("ID", data.playerNames, true);
-	      richEmbed.addField("Glory / Valor Points", data.playerGloryValorPoints, true);
-	      richEmbed.addField("Last Login", data.playerLastLogin, true);
-	      richEmbed.addBlankField()
-	      richEmbed.addField("Commands", "`Show list - !pvp\nSub - !pvp sub and !pvp sub @user\nUnsub - !pvp unsub and !pvp unsub @user\nPing list - !pvp ping your message here`");
+        richEmbed.addField("ID", data.playerNames, true);
+        richEmbed.addField("Glory / Valor Points", data.playerGloryValorPoints, true);
+        richEmbed.addField("Last Login", data.playerLastLogin, true);
+        richEmbed.addBlankField()
+        richEmbed.addField("Commands", "`Show list - !pvp\nSub - !pvp sub and !pvp sub @user\nUnsub - !pvp unsub and !pvp unsub @user\nPing list - !pvp ping your message here`");
 
-	      console.log( timestampPrefix() + "Displaying PVP List" );
+        console.log( timestampPrefix() + "Displaying PVP List" );
         await pvpChannel.send(richEmbed);
       });
     }
-	});
-	return;
-}
-
-function pingPVPList(msg, creator) {
-	pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
-	.then(function(results){
-		let playerIDs = '';
-		var rows = JSON.parse(JSON.stringify(results));
-
-		if( rows.length > 0 ) {
-			for(var i=0;i<rows.length;i++) {
-				playerIDs += "<@"+rows[i].user_id+"> ";
-			}
-
-  		let creator_name = creator.nickname ? creator.nickname : creator.user.username;
-
-			var richEmbed = new Discord.RichEmbed()
-			  .setColor("#DC143C")
-			  .setAuthor(creator_name, creator.user.avatarURL)
-			  .setDescription(msg);
-
-		  richEmbed.addField(":wave:", playerIDs);
-
-		  pvpChannel.send(richEmbed);
-		}
-	});
+    else {
+      await pvpChannel.send("Nobody is on the PVP interest list :slight_frown:");
+    }
+  })
+  .catch(function(e){
+    console.log(e);
+  });
+  return;
 }
 
 async function getPVPStats(rows) {
-	const glory_hash = 2000925172; // competitive
-	const valor_hash = 3882308435; // quickplay
-	const infamy_hash = 2772425241; // gambit
-	const membershipType = 4;
+  const glory_hash = 2000925172; // competitive
+  const valor_hash = 3882308435; // quickplay
+  const infamy_hash = 2772425241; // gambit
+  const membershipType = 4;
 
-	let data = {
-		playerNames: '',
-		playerGloryValorPoints: '',
-		playerLastLogin: ''
-	};
+  let data = {
+    playerNames: '',
+    playerGloryValorPoints: '',
+    playerLastLogin: ''
+  };
 
-	for ( var i=0; i<rows.length; i++ ) {
-		let username = rows[i].username;
-		let userID = rows[i].user_id;
-		let vPt = '';
-		let gPt = '';
-		let iPt = '';
-		let lastLogin = '-';
+  for ( var i=0; i<rows.length; i++ ) {
+    let username = rows[i].username;
+    let userID = rows[i].user_id;
+    let vPt = '';
+    let gPt = '';
+    let iPt = '';
+    let lastLogin = '-';
 
-		await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username))
-		.then(async function(response){
+    await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username))
+    .then(async function(response){
 
-			if( response.Response[0] && response.Response[0].membershipId ) {
-				let membershipId = response.Response[0].membershipId;
+      if( response.Response[0] && response.Response[0].membershipId ) {
+        let membershipId = response.Response[0].membershipId;
 
-				await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']})
-				.then(async function(r){
-					if( await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
-						let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
-						iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
-						vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
-						gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
-						lastLogin = r.Response.profile.data.dateLastPlayed;
-						lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '-';
-					}
-				});
-			}
-		});
+        await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']})
+        .then(async function(r){
+          if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
+            let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
+            iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
+            vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
+            gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
+            lastLogin = r.Response.profile.data.dateLastPlayed;
+            lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '-';
+          }
+        });
+      }
+    });
 
-		data.playerNames += username + '\n';
-		data.playerGloryValorPoints += (gPt=='' && vPt =='') ? "-\n" : gPt + " / " + vPt +"\n";
-		data.playerLastLogin += lastLogin + "\n";
-	}
+    data.playerNames += username + '\n';
+    data.playerGloryValorPoints += (gPt=='' && vPt =='') ? "-\n" : gPt + " / " + vPt +"\n";
+    data.playerLastLogin += lastLogin + "\n";
+  }
 
-	return data;
+  return data;
+}
+
+function pingPVPList(msg, creator) {
+  pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
+  .then(function(results){
+    let playerIDs = '';
+    var rows = JSON.parse(JSON.stringify(results));
+
+    if( rows.length > 0 ) {
+      for(var i=0;i<rows.length;i++) {
+        playerIDs += "<@"+rows[i].user_id+"> ";
+      }
+
+      let creator_name = creator.nickname ? creator.nickname : creator.user.username;
+
+      var richEmbed = new Discord.RichEmbed()
+        .setColor("#DC143C")
+        .setAuthor(creator_name, creator.user.avatarURL)
+        .setDescription(msg);
+
+      richEmbed.addField(":wave:", playerIDs);
+
+      pvpChannel.send(richEmbed);
+    }
+  });
 }
 
 client.login(config.token);
