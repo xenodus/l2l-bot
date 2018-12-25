@@ -7,6 +7,7 @@ const pool = config.getPool();
 const moment = require("moment");
 const Discord = require("discord.js");
 const client = new Discord.Client();
+let axios = require('axios');
 
 var Traveler = require('the-traveler').default;
 const traveler = new Traveler({
@@ -465,7 +466,7 @@ client.on("message", (message) => {
           else
             subPVPList(message.member);
 
-          displayPVPList(pvpChannel)
+          displayPVPList()
           .then(function(){
             message.delete();
           });
@@ -483,7 +484,7 @@ client.on("message", (message) => {
           else
             unsubPVPList(message.member);
 
-          displayPVPList(pvpChannel)
+          displayPVPList()
           .then(function(){
             message.delete();
           });
@@ -500,7 +501,7 @@ client.on("message", (message) => {
 
         case "list":
         default:
-          displayPVPList(pvpChannel)
+          displayPVPList()
           .then(function(){
             message.delete();
           });
@@ -528,8 +529,8 @@ async function clear(channel) {
   }
 }
 
-async function displayPVPList(channel) {
-  await clearBotMessages(channel)
+async function displayPVPList() {
+  await clearBotMessages(pvpChannel)
   .then(function(){
     pvpChannel.startTyping();
     getPVPList().then(function(){
@@ -1324,7 +1325,7 @@ async function getPVPList() {
 
         richEmbed.addField("ID", data.playerNames, true);
         richEmbed.addField("Glory / Valor Points", data.playerGloryValorPoints, true);
-        richEmbed.addField("Last Login", data.playerLastLogin, true);
+        richEmbed.addField("KDA", data.playerKDA, true);
         richEmbed.addBlankField()
         richEmbed.addField("Commands", "`Show list - !pvp\nSub - !pvp sub and !pvp sub @user\nUnsub - !pvp unsub and !pvp unsub @user\nPing list - !pvp ping your message here`");
 
@@ -1351,7 +1352,8 @@ async function getPVPStats(rows) {
   let data = {
     playerNames: '',
     playerGloryValorPoints: '',
-    playerLastLogin: ''
+    playerLastLogin: '',
+    playerKDA: ''
   };
 
   for ( var i=0; i<rows.length; i++ ) {
@@ -1360,6 +1362,7 @@ async function getPVPStats(rows) {
     let vPt = '';
     let gPt = '';
     let iPt = '';
+    let kda = '';
     let lastLogin = '-';
 
     await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username))
@@ -1372,6 +1375,18 @@ async function getPVPStats(rows) {
         .then(async function(r){
           if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
             let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
+
+            kda = await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
+            .then(function(res){
+              if( res.status == 200 ) {
+                return res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue;
+              }
+              return '';
+            })
+            .catch(function(e){
+              return '';
+            });
+
             iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
             vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
             gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
@@ -1383,6 +1398,7 @@ async function getPVPStats(rows) {
     });
 
     data.playerNames += username + '\n';
+    data.playerKDA += (kda ? kda : '-') + '\n';
     data.playerGloryValorPoints += (gPt=='' && vPt =='') ? "-\n" : gPt + " / " + vPt +"\n";
     data.playerLastLogin += lastLogin + "\n";
   }
@@ -1398,7 +1414,7 @@ function pingPVPList(msg, creator) {
 
     if( rows.length > 0 ) {
       for(var i=0;i<rows.length;i++) {
-        playerIDs += "<@"+rows[i].user_id+"> ";
+        playerIDs += "<@!"+rows[i].user_id+"> ";
       }
 
       let creator_name = creator.nickname ? creator.nickname : creator.user.username;
