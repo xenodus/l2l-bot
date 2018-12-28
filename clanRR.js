@@ -29,7 +29,7 @@ function simpleHTML(results) {
 		'</head>' +
 		'<body style="padding: 30px;">' +
 		'<h1>SG-E Clan 1 & 2 Raid Report</h1>' +
-		'<h6>Last Updated: ' + moment(rows[0].last_updated).format("DD MMM YYYY h:mm A") + '</h6>' +
+		'<h6>Last Updated: ' + moment(rows[0].last_updated).format("DD MMM YYYY h:mm A") + ' &bull; List updates automatically daily between 5 to 6 PM</h6>' +
 		dataTable(rows) +
 		'<script>$(document).ready(function(){$("#rr_table").DataTable({ paging: false })});</script>' +
 		'</body>' +

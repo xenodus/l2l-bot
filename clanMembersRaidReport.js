@@ -33,6 +33,7 @@ console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
 getClanMembers(clanIDs)
 .then(function(clanMembersInfo){
+	/*
 	if( clanMembersInfo.length > 0 ) {
 		console.log(timestampPrefix() + "Performing step 2 of 4: Get Raid Info of Members");
 
@@ -68,6 +69,7 @@ getClanMembers(clanIDs)
 			})
 		});
 	}
+	*/
 });
 
 async function getClanMembers(clanIDs) {
@@ -85,15 +87,38 @@ async function getClanMembers(clanIDs) {
 						let bnetID = '';
 
 						if( memberRecords[i].bungieNetUserInfo && memberRecords[i].bungieNetUserInfo.membershipId ) {
-							bnetID = await axios.get('https://www.bungie.net/Platform/User/GetBungieNetUserById/' + memberRecords[i].bungieNetUserInfo.membershipId, { headers: { 'X-API-Key': config.bungieAPIKey } })
+
+							// Retrieve from DB is info exists
+							bnetID = await pool.query("SELECT * FROM destiny_user WHERE bungieId = ? LIMIT 1", [memberRecords[i].bungieNetUserInfo.membershipId])
 							.then(function(r){
-								if( r.status == 200 ) {
-									if( r.data.Response.blizzardDisplayName ) {
-										return r.data.Response.blizzardDisplayName;
-									}
+								if( r.length > 0 ) {
+									return r[0].bnetId;
 								}
 								return '';
+							})
+							.catch(function(e){
+								return '';
 							});
+
+							// Else retrieve from Bungie's slow API
+							if( bnetID === '' ) {
+								bnetID = await axios.get('https://www.bungie.net/Platform/User/GetBungieNetUserById/' + memberRecords[i].bungieNetUserInfo.membershipId, { headers: { 'X-API-Key': config.bungieAPIKey } })
+								.then(function(r){
+									if( r.status == 200 ) {
+										if( r.data.Response.blizzardDisplayName ) {
+											return r.data.Response.blizzardDisplayName;
+										}
+									}
+									return '';
+								});
+
+								pool.query("INSERT INTO destiny_user SET ?", {
+									destinyId: memberRecords[i].destinyUserInfo.membershipId,
+									bungieId: memberRecords[i].bungieNetUserInfo.membershipId,
+									display_name: memberRecords[i].destinyUserInfo.displayName,
+									bnetId: bnetID
+								});
+							}
 						}
 
 						await clanMembersInfo.push({
@@ -117,6 +142,9 @@ async function getClanMembers(clanIDs) {
 					}
 				}
 			}
+		})
+		.catch(function(e){
+			//console.log(e);
 		});
 	}
 

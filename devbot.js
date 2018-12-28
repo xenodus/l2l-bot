@@ -499,6 +499,13 @@ client.on("message", (message) => {
           message.delete();
           return;
 
+        case "detailed":
+          displayPVPList("detailed")
+          .then(function(){
+            message.delete();
+          });
+          return;
+
         case "list":
         default:
           displayPVPList()
@@ -527,29 +534,6 @@ async function clear(channel) {
   catch(e) {
     return;
   }
-}
-
-async function displayPVPList() {
-  await clearBotMessages(pvpChannel)
-  .then(function(){
-    pvpChannel.startTyping();
-    getPVPList().then(function(){
-      pvpChannel.stopTyping();
-    });
-  })
-}
-
-async function clearBotMessages(channel) {
-  let c = channel;
-
-  await channel.fetchMessages({limit: 99})
-  .then(function(messages){
-    messages = messages.filter(m => { return m.author.bot == true && (m.embeds.length == 0 || m.embeds[0].author.name == 'PvP Interest List') });
-    c.bulkDelete(messages);
-  })
-  .catch(function(e){
-    console.log(e);
-  });
 }
 
 function timestampPrefix() {
@@ -1310,28 +1294,97 @@ async function unsubPVPList(player, comment='') {
                     PVP List Show
 ***************************************************************/
 
-async function getPVPList() {
+async function displayPVPList(type='simple') {
+  await clearBotMessages(pvpChannel)
+  .then(function(){
+    pvpChannel.startTyping();
+    getPVPList(type).then(function(){
+      pvpChannel.stopTyping();
+    });
+  })
+}
+
+async function clearBotMessages(channel) {
+  let c = channel;
+
+  await channel.fetchMessages({limit: 99})
+  .then(function(messages){
+    messages = messages.filter(m => { return m.author.bot == true && (m.embeds.length == 0 || m.embeds[0].author.name.includes('PvP Interest List')) });
+    c.bulkDelete(messages);
+  })
+  .catch(function(e){
+    console.log(e);
+  });
+}
+
+async function getPVPList(type="simple") {
   await pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID])
   .then(async function(results){
     var rows = JSON.parse(JSON.stringify(results));
 
     if( rows.length > 0 ) {
 
-      await getPVPStats(rows).then(async function(data){
+      if(type==='simple') {
+
+        let playersName = '';
+
+        for ( var i=0; i<rows.length; i++ ) {
+          let username = rows[i].username;
+          playersName += "• `" + username+"`\n";
+        }
+
         var richEmbed = new Discord.RichEmbed()
           .setColor("#DC143C")
-          .setAuthor("PvP Interest List", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
+          .setAuthor("PvP Interest List (Simple)", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
+          .setDescription(playersName)
           .setTimestamp();
 
-        richEmbed.addField("ID", data.playerNames, true);
-        richEmbed.addField("Glory / Valor Points", data.playerGloryValorPoints, true);
-        richEmbed.addField("KDA", data.playerKDA, true);
-        richEmbed.addBlankField()
-        richEmbed.addField("Commands", "`Show list - !pvp\nSub - !pvp sub and !pvp sub @user\nUnsub - !pvp unsub and !pvp unsub @user\nPing list - !pvp ping your message here`");
-
-        console.log( timestampPrefix() + "Displaying PVP List" );
+        richEmbed.addField("\u200b\nCommands", "`Show list - !pvp or !pvp detailed\nSub - !pvp sub or !pvp sub @user to sub someone\nUnsub - !pvp unsub or !pvp unsub @user to unsub someone\nPing list - !pvp ping your message here`");
+        console.log( timestampPrefix() + "Displaying Detailed PVP List" );
         await pvpChannel.send(richEmbed);
-      });
+      }
+      else {
+        await getPVPStats(rows).then(async function(data){
+          var richEmbed = new Discord.RichEmbed()
+            .setColor("#DC143C")
+            .setAuthor("PvP Interest List (Detailed)", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
+            .setTimestamp();
+
+          let playersName = '';
+          let playersGlory = '';
+          let playersStat = '';
+
+          if( data.length > 0 ) {
+            for( var i=0;i<data.length;i++ ) {
+              let description = '';
+              description += data[i].glory !== '' ? '**Glory:** ' + data[i].glory+'\n' : '';
+              description += (data[i].kd !== '' && data[i].kad !== '') ? '**KD:** ' + data[i].kd +' **KAD:** ' + data[i].kad + '\n' : '';
+              description += description === '' ? 'n/a' : '';
+
+              richEmbed.addField(data[i].username, description, true);
+
+              // Fill empty columns
+              if( i+1 == data.length ) {
+                let emptyColumn = 3 - (data.length % 3);
+                if( emptyColumn > 0 ) {
+                  while( emptyColumn != 0 ) {
+                    richEmbed.addField("\u200b", "\u200b", true);
+                    emptyColumn--;
+                  }
+                }
+              }
+
+              playersName += data[i].username + '\n';
+              playersGlory += data[i].glory !== '' ? 'Glory: ' + data[i].glory+'\n' : '-\n';
+              playersStat += (data[i].kd === '' || data[i].kd === '') ? '-\n' : data[i].kd + ' / ' + data[i].kad + '\n';
+            }
+          }
+
+          richEmbed.addField("\u200b\nCommands", "`Show list - !pvp or !pvp detailed\nSub - !pvp sub or !pvp sub @user to sub someone\nUnsub - !pvp unsub or !pvp unsub @user to unsub someone\nPing list - !pvp ping your message here`");
+          console.log( timestampPrefix() + "Displaying Detailed PVP List" );
+          await pvpChannel.send(richEmbed);
+        });
+      }
     }
     else {
       await pvpChannel.send("Nobody is on the PVP interest list :slight_frown:");
@@ -1349,12 +1402,7 @@ async function getPVPStats(rows) {
   const infamy_hash = 2772425241; // gambit
   const membershipType = 4;
 
-  let data = {
-    playerNames: '',
-    playerGloryValorPoints: '',
-    playerLastLogin: '',
-    playerKDA: ''
-  };
+  let data = [];
 
   for ( var i=0; i<rows.length; i++ ) {
     let username = rows[i].username;
@@ -1362,8 +1410,10 @@ async function getPVPStats(rows) {
     let vPt = '';
     let gPt = '';
     let iPt = '';
+    let kad = '';
     let kda = '';
-    let lastLogin = '-';
+    let kd = '';
+    let lastLogin = '';
 
     await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username))
     .then(async function(response){
@@ -1376,31 +1426,38 @@ async function getPVPStats(rows) {
           if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
             let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
 
-            kda = await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
-            .then(function(res){
+            await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
+            .then(async function(res){
               if( res.status == 200 ) {
-                return res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue;
+                kad = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue;
+                kda = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue;
+                kd = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue;
               }
-              return '';
             })
             .catch(function(e){
-              return '';
+              console.log(e);
             });
 
             iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
             vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
             gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
             lastLogin = r.Response.profile.data.dateLastPlayed;
-            lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '-';
+            lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '';
           }
         });
       }
     });
 
-    data.playerNames += username + '\n';
-    data.playerKDA += (kda ? kda : '-') + '\n';
-    data.playerGloryValorPoints += (gPt=='' && vPt =='') ? "-\n" : gPt + " / " + vPt +"\n";
-    data.playerLastLogin += lastLogin + "\n";
+    data.push({
+      username: username,
+      kda: kda,
+      kad: kad,
+      kd: kd,
+      glory: gPt,
+      valor: vPt,
+      infamy: iPt,
+      lastLogin: lastLogin
+    });
   }
 
   return data;
@@ -1422,7 +1479,8 @@ function pingPVPList(msg, creator) {
       var richEmbed = new Discord.RichEmbed()
         .setColor("#DC143C")
         .setAuthor(creator_name, creator.user.avatarURL)
-        .setDescription(msg);
+        .setDescription(msg)
+        .setTimestamp();
 
       richEmbed.addField(":wave:", playerIDs);
 
