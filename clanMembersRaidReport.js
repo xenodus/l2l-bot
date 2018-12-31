@@ -33,7 +33,6 @@ console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
 getClanMembers(clanIDs)
 .then(function(clanMembersInfo){
-	/*
 	if( clanMembersInfo.length > 0 ) {
 		console.log(timestampPrefix() + "Performing step 2 of 4: Get Raid Info of Members");
 
@@ -60,6 +59,7 @@ getClanMembers(clanIDs)
 						sosp: member.raidCompletions.sosp,
 						lw: member.raidCompletions.lw,
 						sotp: member.raidCompletions.sotp,
+						last_online: member.last_online,
 						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
 					})
 				}
@@ -69,7 +69,6 @@ getClanMembers(clanIDs)
 			})
 		});
 	}
-	*/
 });
 
 async function getClanMembers(clanIDs) {
@@ -95,8 +94,7 @@ async function getClanMembers(clanIDs) {
 									return r[0].bnetId;
 								}
 								return '';
-							})
-							.catch(function(e){
+							}).catch(function(e){
 								return '';
 							});
 
@@ -121,10 +119,22 @@ async function getClanMembers(clanIDs) {
 							}
 						}
 
+						let last_online = null;
+
+						last_online = await traveler.getProfile(membershipType, memberRecords[i].destinyUserInfo.membershipId, { components: [100] })
+						.then(function(r){
+							last_online = r.Response.profile.data.dateLastPlayed;
+							last_online = moment(last_online.substr(0,10), "YYYY-MM-DD").isValid() ? moment(last_online.substr(0,10), "YYYY-MM-DD").format("YYYY-MM-DD") : '';
+							return last_online;
+						}).catch(function(e){
+							return null;
+						});
+
 						await clanMembersInfo.push({
 							displayName: memberRecords[i].destinyUserInfo.displayName,
 							membershipId: memberRecords[i].destinyUserInfo.membershipId,
 							bnetID: bnetID,
+							last_online: last_online,
 							raidCompletions: {
 								'levi': 0,
 								'levip': 0,
@@ -142,8 +152,7 @@ async function getClanMembers(clanIDs) {
 					}
 				}
 			}
-		})
-		.catch(function(e){
+		}).catch(function(e){
 			//console.log(e);
 		});
 	}
