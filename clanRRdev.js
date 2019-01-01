@@ -4,7 +4,7 @@ const moment = require("moment");
 
 const express = require('express');
 const app = express();
-const port = 8080;
+const port = 8082;
 
 const raids = {
 	'Levi': 'levi',

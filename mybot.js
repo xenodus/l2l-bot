@@ -62,8 +62,8 @@ client.on("ready", () => {
   }, 30000);
 
   setInterval(function(){
-    console.log(timestampPrefix() + "Refreshing events channel");
-    getEvents(); // refresh and re-sort event channel every 3 hours
+    console.log(timestampPrefix() + "Reordering events channel");
+    reorderEvents(); // reorder event channel every 3 hours
   }, 3600000*3);
 });
 
@@ -73,7 +73,7 @@ client.on("guildCreate", guild => {
     channelCheck(guild);
 });
 
-client.on('messageReactionAdd', (reaction, user) => {
+client.on('messageReactionAdd', async function(reaction, user) {
 
   if ( reaction.message.guild === null ) return; // Disallow DM
   if ( user.bot ) return;
@@ -82,15 +82,21 @@ client.on('messageReactionAdd', (reaction, user) => {
 
   serverID = reaction.message.guild.id;
 
-  channelCheck(reaction.message.guild);
+  await channelCheck(reaction.message.guild);
 
   if( reaction.message.channel.name != eventChannelName ) return;
 
-  message = reaction.message;
-  eventName = message.embeds[0].message.embeds[0].title ? message.embeds[0].message.embeds[0].title : "";
+  eventName = reaction.message.embeds[0].message.embeds[0].title ? reaction.message.embeds[0].message.embeds[0].title : "";
 
   if( eventName ) {
-    eventID = eventName.split("Event ID: ")[1] ? eventName.split("Event ID: ")[1] : 0;
+    message_id = reaction.message.id;
+    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? LIMIT 1", [message_id, serverID])
+    .then(function(results){
+      return results[0].event_id;
+    })
+    .error(function(e){
+      return 0;
+    });
 
     if( eventID ) {
       if(reaction.emoji.name === "🆗") {
@@ -120,7 +126,7 @@ client.on('messageReactionAdd', (reaction, user) => {
   }
 });
 
-client.on("message", (message) => {
+client.on("message", async function(message) {
 
   if ( message.author.bot ) return;
   if ( message.channel.name != eventChannel.name && message.channel.name != channel.name && message.channel.name != pvpChannel.name ) return;
@@ -134,19 +140,13 @@ client.on("message", (message) => {
   isClanMember = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.roles.find(roles => roles.name === "Clan 1") || message.member.roles.find(roles => roles.name === "Clan 2")) ? true : false;
   serverID = message.guild.id;
 
-  channelCheck(message.guild);
+  await channelCheck(message.guild);
 
   const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
   const command = args.shift().toLowerCase();
 
   /****************************
-      raid_lfg channel
-
-      -> !event create "event name" "event description" | e.g. !event create "Levi 8 Dec 9PM" "Bring banners"
-      -> !event remove event_id | e.g. !event remove 5
-      -> !event edit event_id "event name" "event description" | !event edit 5 "Levi 8 Dec 9PM" "Bring MORE banners"
-      -> !event add event_id @user confirmed|reserve | !event add 5 @xenodus
-      -> !event remove event_id @user | !event remove 5 @xenodus
+        #raid_lfg channel
   *****************************/
 
   if ( command === "event" ) {
@@ -222,7 +222,7 @@ client.on("message", (message) => {
             let indices = []; // find the indices of the quotation marks
 
             for (var i in recompose) {
-                let char = recompose[i];
+              let char = recompose[i];
               if (char === '"') {
                 indices.push(i);
               }
@@ -343,14 +343,9 @@ client.on("message", (message) => {
     }
   }
 
-  /****************************
-      raid_newbies_signup channel
-
-      -> sub raid_name comment | e.g. !sub levi free after 10
-      -> unsub raid_name | e.g. !unsub levi
-      -> add raid_name @user_name comment | !add levi @xenodus noob
-      -> remove raid_name @user_name | !remove levi @xenodus
-  *****************************/
+  /************************************
+        #raid_newbies_signup channel
+  *************************************/
 
   else if ( command === "sub" ) {
     if( args[0] ) {
@@ -443,12 +438,22 @@ client.on("message", (message) => {
     getInterestList(message);
   }
 
+  else if ( command === "reorder" ) {
+    if ( isAdmin ) {
+      reorderEvents();
+    }
+  }
+
   else if ( command === "clear" || command === "refresh" ) {
     if ( isAdmin ) {
       getInterestList();
       getEvents();
     }
   }
+
+  /****************************
+        #pvp_lfg channel
+  ****************************/
 
   if( message.channel == pvpChannel ) {
     if ( command === "pvp" ) {
@@ -653,25 +658,25 @@ function joinEvent(eventID, player, type="confirmed", addedByUser="") {
                   Update existing event message
 ***************************************************************/
 
-function updateEventMessage(eventID) {
-  pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [eventID, serverID])
+async function updateEventMessage(eventID) {
+  await pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [eventID, serverID])
   .then(function(results){
     var event = JSON.parse(JSON.stringify(results));
     return event;
   })
-  .then(function(event){
+  .then(async function(event){
     if( event.length > 0 ) {
-      pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? AND event.server_id = ? ORDER BY event_signup.date_added ASC", [eventID, serverID])
-      .then(function(results){
+      await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? AND event.server_id = ? ORDER BY event_signup.date_added ASC", [eventID, serverID])
+      .then(async function(results){
 
         if( event[0].message_id > 0 ) {
 
           eventInfo = getEventInfo(event[0], results);
 
-          eventChannel.fetchMessage(event[0].message_id)
-          .then(function(message){
-            message.clearReactions().then(function(message){
-              message.edit( eventInfo.richEmbed ).then(async function(message){
+          await eventChannel.fetchMessage(event[0].message_id)
+          .then(async function(message){
+            await message.clearReactions().then(async function(message){
+              await message.edit( eventInfo.richEmbed ).then(async function(message){
                 if( results.filter(row => row.type == "confirmed").length < 6 )
                   await message.react('🆗');
                 await message.react('🤔');
@@ -920,9 +925,9 @@ function deleteEvent(eventID, player) {
                     !event edit command
 ***************************************************************/
 
-function updateEvent(player, eventID, eventName, eventDescription) {
-  pool.query("SELECT * FROM event WHERE event_id = ?", [eventID])
-  .then(function(results){
+async function updateEvent(player, eventID, eventName, eventDescription) {
+  await pool.query("SELECT * FROM event WHERE event_id = ?", [eventID])
+  .then(async function(results){
     var rows = JSON.parse(JSON.stringify(results));
 
     if ( rows[0] ) {
@@ -941,12 +946,15 @@ function updateEvent(player, eventID, eventName, eventDescription) {
         event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
       }
     }
+      console.log( timestampPrefix() + "Updating event ID: " + eventID );
 
-      return pool.query("UPDATE event SET event_name = ?, event_description = ?, event_date = ? WHERE event_id = ?", [eventName, eventDescription, event_date, eventID]);
+      return await pool.query("UPDATE event SET event_name = ?, event_description = ?, event_date = ? WHERE event_id = ?", [eventName, eventDescription, event_date, eventID]);
     }
 
   }).then(function(){
     updateEventMessage(eventID);
+  }).then(function(){
+    reorderEvents();
   });
 }
 
@@ -954,10 +962,10 @@ function updateEvent(player, eventID, eventName, eventDescription) {
                     !event create command
 ***************************************************************/
 
-function createEvent(player, eventName, eventDescription) {
+async function createEvent(player, eventName, eventDescription) {
 
-  eventChannel.guild.fetchMember(player)
-  .then(function(member){
+  await eventChannel.guild.fetchMember(player)
+  .then(async function(member){
 
     creator = member.nickname ? member.nickname : member.user.username;
     event_date_string = getEventDatetimeString(eventName);
@@ -972,36 +980,36 @@ function createEvent(player, eventName, eventDescription) {
       }
     }
 
-    pool.query("INSERT into event SET ?",
-        { server_id: serverID,
-          event_name: eventName,
-          event_description: eventDescription,
-          event_date: event_date,
-          created_by: player.id,
-          created_by_username: creator,
-          date_added: moment().format('YYYY-M-D HH:mm:ss')
-        })
-    .then(function(result){
+    await pool.query("INSERT into event SET ?",
+    { server_id: serverID,
+      event_name: eventName,
+      event_description: eventDescription,
+      event_date: event_date,
+      created_by: player.id,
+      created_by_username: creator,
+      date_added: moment().format('YYYY-M-D HH:mm:ss')
+    })
+    .then(async function(result){
 
-      eventChannel.guild.fetchMember(player)
-      .then(function(member){
-        joinEvent(result.insertId, member);
+      await eventChannel.guild.fetchMember(player)
+      .then(async function(member){
+        await joinEvent(result.insertId, member);
       });
 
-      pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [result.insertId, serverID])
-      .then(function(results){
+      await pool.query("SELECT * FROM event WHERE event_id = ? AND server_id = ?", [result.insertId, serverID])
+      .then(async function(results){
 
         var rows = JSON.parse(JSON.stringify(results));
         let event = rows[0];
 
-        pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
-        .then(function(results){
+        await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+        .then(async function(results){
 
           eventInfo = getEventInfo(event, results);
 
-          eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+          await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
 
-            pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
+            await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
 
             if( eventInfo.confirmedCount <= 6 )
               await message.react('🆗');
@@ -1011,7 +1019,81 @@ function createEvent(player, eventName, eventDescription) {
         });
       });
     });
-  })
+  }).then(function(){
+    reorderEvents();
+  });
+}
+
+/**************************************************************
+                  Edit to reorder event messages
+***************************************************************/
+
+async function reorderEvents() {
+
+  console.log( timestampPrefix() + "Attempting to reorder events" );
+
+  await eventChannel.fetchMessages()
+  .then(async function(messages){
+    let current_event_messages = messages.filter(function(msg){
+      return msg.embeds.length > 0 && msg.embeds[0].title && msg.embeds[0].title.includes('Event ID:')
+    });
+
+    let current_event_messages_ids = current_event_messages.map(function(msg){
+      return msg.id;
+    });
+
+    current_event_messages_ids = current_event_messages_ids.sort();
+
+    if( current_event_messages_ids.length > 0 ) {
+      await pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
+      .then(async function(results){
+        var rows = JSON.parse(JSON.stringify(results));
+
+        for(var i = 0; i < rows.length; i++) {
+
+          let event = rows[i];
+
+          await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+          .then(async function(results){
+            eventInfo = getEventInfo(event, results);
+            curr_event_message = current_event_messages.filter(e => { return e.id === event.message_id }).values().next().value;
+            curr_event_message_id_to_edit = current_event_messages_ids.shift();
+
+            await eventChannel.fetchMessage(curr_event_message_id_to_edit)
+            .then(async function(msg){
+              if( msg.embeds[0].title != eventInfo.richEmbed.title ){
+                console.log( timestampPrefix() + "Reordered event ID: " + event.event_id + " from message ID: " + event.message_id + " to " + curr_event_message_id_to_edit );
+                await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [curr_event_message_id_to_edit, event.event_id]);
+
+                msg.edit( eventInfo.richEmbed )
+                .then(async function(message){
+                  await message.clearReactions().then(async function(message){
+                    if( results.filter(row => row.type == "confirmed").length < 6 )
+                      await message.react('🆗');
+                    await message.react('🤔');
+                    await message.react('⛔');
+                  });
+                });
+              }
+            });
+          });
+        }
+
+        // delete any ids that remains
+        if( current_event_messages_ids.length > 0 ) {
+          for(var i=0;i<current_event_messages_ids.length;i++) {
+            await eventChannel.fetchMessage(current_event_messages_ids[i])
+            .then(async function(msg){
+              console.log( timestampPrefix() + "Deleting message ID: " + current_event_messages_ids[i] + " with title: " + msg.embeds[0].title );
+              msg.delete();
+            });
+          }
+        }
+      })
+    }
+    else
+      console.log( timestampPrefix() + "No active events" );
+  });
 }
 
 /**************************************************************

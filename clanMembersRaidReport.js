@@ -65,7 +65,7 @@ getClanMembers(clanIDs)
 				}
 
 				console.log(timestampPrefix() + "Finished!");
-				//process.exit();
+				process.exit();
 			})
 		});
 	}
