@@ -67,16 +67,18 @@ const infamyRanks = [
 app.get('/', async function(req, res){
 	rr_results = await pool.query("SELECT * FROM clan_raid_report");
 	pvp_results = await pool.query("SELECT * FROM clan_pvp_stats");
-	await res.write( simpleHTML( rr_results, pvp_results ) ); //write a response to the client
+	discord_results = await pool.query("SELECT * FROM clan_discord");
+	await res.write( simpleHTML( rr_results, pvp_results, discord_results ) ); //write a response to the client
 	await res.end(); //end the response
 });
 
 app.listen(port, () => console.log(`SGE ClanRR listening on port ${port}!`));
 
-function simpleHTML(results, pvp_results) {
+function simpleHTML(results, pvp_results, discord_results) {
 
 	var rows = JSON.parse(JSON.stringify(results));
 	var pvp_rows = JSON.parse(JSON.stringify(pvp_results));
+	var discord_rows = JSON.parse(JSON.stringify(discord_results));
 
 	return `<html>
 		<head>
@@ -132,14 +134,17 @@ function simpleHTML(results, pvp_results) {
 				  <li class="nav-item">
 				    <a class="nav-link" id="pills-charts-tab" data-toggle="pill" href="#pills-charts" role="tab" aria-controls="pills-charts" aria-selected="false">Charts</a>
 				  </li>
+				  <li class="nav-item">
+				    <a class="nav-link" id="pills-discord-tab" data-toggle="pill" href="#pills-discord" role="tab" aria-controls="pills-discord" aria-selected="false">Clan Discord Names</a>
+				  </li>
 				</ul>
 				<div class="tab-content" id="pills-tabContent">
 				  <div class="tab-pane fade show active" id="pills-report" role="tabpanel" aria-labelledby="pills-report-tab">
 						<h1>SG-E Clan 1 & 2 Raid Stats</h1>
-						<h6>Last Updated: `+ moment(rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically daily between 5 to 6 PM</h6>
+						<h6>Last Updated: `+ moment(rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically every 3 hours</h6>
 						<br/>
 						<h6>
-							<small>Stats are pulled from <a href="https://raid.report/" target="_blank">https://raid.report/</a></small>
+							<small>Stats by <a href="https://raid.report/" target="_blank">https://raid.report/</a></small>
 						</h6>
 						`+ rrDataTable(rows) +`
 				  </div>
@@ -155,7 +160,7 @@ function simpleHTML(results, pvp_results) {
 				  </div>
 				  <div class="tab-pane fade" id="pills-pvp" role="tabpanel" aria-labelledby="pills-pvp-tab">
 						<h1>SG-E Clan 1 & 2 PVP Stats</h1>
-						<h6>Last Updated: `+ moment(pvp_rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically daily between 5 to 6 PM</h6>
+						<h6>Last Updated: `+ moment(pvp_rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically every 3 hours</h6>
 						<hr/>
 						<div>
 							<h6>FAQ</h6>
@@ -168,16 +173,70 @@ function simpleHTML(results, pvp_results) {
 						</div>
 						`+ pvpDataTable(pvp_rows) +`
 				  </div>
+				  <div class="tab-pane fade" id="pills-discord" role="tabpanel" aria-labelledby="pills-discord-tab">
+						<h1>Members that are MIA or with non matching Battle.net ID in Discord</h1>
+						<h6>Last Updated: `+ moment(discord_rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically every 5 minutes</h6>
+						`+ discordDataTable(discord_rows) +`
+				  </div>
 				</div>
 
 				<script>
 					const memberData = `+JSON.stringify(results)+`;
 					const memberPVPData = `+JSON.stringify(pvp_results)+`;
+					const memberDiscordData = `+JSON.stringify(discord_results)+`;
 					const raids = `+JSON.stringify(raids)+`;
 
 					$(document).ready(function(){
-						let rr_table = $("#rr_table").DataTable({ paging: false, fixedHeader: true });
-						let pvp_table = $("#pvp_table").DataTable({ paging: false, fixedHeader: true });
+						let rr_table = $("#rr_table").DataTable({
+							paging: false,
+							fixedHeader: true,
+			        "columnDefs": [ {
+			            "searchable": false,
+			            "orderable": false,
+			            "targets": 0
+			        } ],
+			        "order": [[ 1, 'asc' ]]
+						});
+
+						let pvp_table = $("#pvp_table").DataTable({
+							paging: false,
+							fixedHeader: true,
+			        "columnDefs": [ {
+			            "searchable": false,
+			            "orderable": false,
+			            "targets": 0
+			        } ],
+			        "order": [[ 1, 'asc' ]]
+						});
+
+						let discord_table = $("#discord_table").DataTable({
+							paging: false,
+							fixedHeader: true,
+			        "columnDefs": [ {
+			            "searchable": false,
+			            "orderable": false,
+			            "targets": 0
+			        } ],
+			        "order": [[ 1, 'asc' ]]
+						});
+
+				    rr_table.on( 'order.dt search.dt', function () {
+				        rr_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+				            cell.innerHTML = i+1;
+				        } );
+				    } ).draw();
+
+				    pvp_table.on( 'order.dt search.dt', function () {
+				        pvp_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+				            cell.innerHTML = i+1;
+				        } );
+				    } ).draw();
+
+				    discord_table.on( 'order.dt search.dt', function () {
+				        discord_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+				            cell.innerHTML = i+1;
+				        } );
+				    } ).draw();
 
 						google.charts.load('current', {'packages':['corechart']});
 
@@ -306,9 +365,11 @@ function rrDataTable(rows) {
 		<table id="rr_table" class="display table table-striped">
 			<thead>
 				<tr>
-					<th class="text-nowrap">Display Name</th>
-					<th class="text-nowrap">BNet ID</th>
-					<th class="text-nowrap">Last Login</th>`;
+					<th class="no-sort"></th>
+					<th class="text-nowrap text-left">Display Name</th>
+					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-center">Clan</th>
+					<th class="text-nowrap text-left">Last Login</th>`;
 
 	Object.keys(raids).forEach(function(raid) {
 		str += `<th class="text-nowrap">`+raid+`</th>`;
@@ -324,9 +385,11 @@ function rrDataTable(rows) {
 	for(var i=0; i<rows.length; i++) {
 		str += `
 		<tr>
+			<td>`+(i+1)+`</td>
 			<td class="text-left">`+rows[i].username+`</td>
 			<td class="text-left">`+rows[i].bnet_id+`</td>
-			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
+			<td class="text-center">`+rows[i].clan_no+`</td>
+			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap text-left">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
 
 		let activityCount = 0;
 
@@ -347,6 +410,67 @@ function rrDataTable(rows) {
 	return str;
 }
 
+function discordDataTable(rows) {
+
+	let membersNamesNoMatch = rows
+	.filter(function(member){
+		return member.bnet_id !== '';
+	})
+	.filter(function(member){
+		return member.discord_nickname === null || (member.bnet_id && member.discord_nickname && member.bnet_id.toLowerCase() != member.discord_nickname.toLowerCase());
+	})
+
+	/* Headers */
+	if( membersNamesNoMatch.length > 0 ) {
+		str = `
+		<div class="table-responsive">
+			<table id="discord_table" class="display table table-striped">
+				<thead>
+					<tr>
+						<th class="no-sort"></th>
+						<th class="text-nowrap text-left">Destiny Name</th>
+						<th class="text-nowrap text-left">BNet ID</th>
+						<th class="text-nowrap text-center">Clan</th>
+					</tr>
+			</thead>
+		<tbody>`;
+
+		for(var i=0; i<membersNamesNoMatch.length; i++) {
+			str += `
+			<tr>
+				<td>`+(i+1)+`</td>
+				<td class="text-left">`+membersNamesNoMatch[i].username+`</td>
+				<td class="text-left">`+membersNamesNoMatch[i].bnet_id+`</td>
+				<td class="text-center">`+membersNamesNoMatch[i].clan_no+`</td>
+			</tr>
+			`;
+		}
+
+		str += `
+				</tbody>
+			</table>
+		</div>`;
+	}
+	else {
+		str = `<div>Woo-hoo! No members are MIA!</div>`;
+	}
+
+	// Members whose BNet ID can't be retrieved due to privacy settings - weirdos
+	let membersNamesNoBNet = rows
+	.filter(function(member){
+		return member.bnet_id == '';
+	})
+	.map(function(member){
+		return member.username;
+	});
+
+	if( membersNamesNoBNet.length > 0 ) {
+		str += `<br/><div><h5>Unable to check the following members due to Battle.net privacy settings: `+membersNamesNoBNet.join(', ')+`<h5></div>`;
+	}
+
+	return str;
+}
+
 function pvpDataTable(rows) {
 
 	/* Headers */
@@ -355,8 +479,10 @@ function pvpDataTable(rows) {
 		<table id="pvp_table" class="display table table-striped">
 			<thead>
 				<tr>
+					<th class="no-sort"></th>
 					<th class="text-nowrap text-left">Display Name</th>
 					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-center">Clan</th>
 					<th class="text-nowrap text-right">KD</th>
 					<th class="text-nowrap text-right">KDA</th>
 					<th class="text-nowrap text-right">KAD</th>
@@ -378,8 +504,10 @@ function pvpDataTable(rows) {
 
 		str += `
 		<tr>
+			<td>`+(i+1)+`</td>
 			<td class="text-left">`+rows[i].username+`</td>
 			<td class="text-left">`+rows[i].bnet_id+`</td>
+			<td class="text-center">`+rows[i].clan_no+`</td>
 			<td class="text-right">`+rows[i].kd+`</td>
 			<td class="text-right">`+rows[i].kda+`</td>
 			<td class="text-right">`+rows[i].kad+`</td>

@@ -41,6 +41,7 @@ getClanMembers(clanIDs)
 						user_id: member.membershipId,
 						username: member.displayName,
 						bnet_id: member.bnetID,
+						clan_no: member.clanNo,
 						kd: member.stats.kd,
 						kad: member.stats.kad,
 						kda: member.stats.kda,
@@ -117,6 +118,7 @@ async function getClanMembers(clanIDs) {
 							displayName: memberRecords[i].destinyUserInfo.displayName,
 							membershipId: memberRecords[i].destinyUserInfo.membershipId,
 							bnetID: bnetID,
+							clanNo: parseInt(key) + 1,
 							stats: {
 								'kd': 0,
 								'kad': 0,

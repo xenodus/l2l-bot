@@ -51,6 +51,7 @@ getClanMembers(clanIDs)
 						user_id: member.membershipId,
 						username: member.displayName,
 						bnet_id: member.bnetID,
+						clan_no: member.clanNo,
 						levi: member.raidCompletions.levi,
 						levip: member.raidCompletions.levip,
 						eow: member.raidCompletions.eow,
@@ -134,6 +135,7 @@ async function getClanMembers(clanIDs) {
 							displayName: memberRecords[i].destinyUserInfo.displayName,
 							membershipId: memberRecords[i].destinyUserInfo.membershipId,
 							bnetID: bnetID,
+							clanNo: parseInt(key) + 1,
 							last_online: last_online,
 							raidCompletions: {
 								'levi': 0,
