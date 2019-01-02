@@ -1025,23 +1025,25 @@ function Event() {
               curr_event_message = current_event_messages.filter(e => { return e.id === event.message_id }).values().next().value;
               curr_event_message_id_to_edit = current_event_messages_ids.shift();
 
-              await eventChannel.fetchMessage(curr_event_message_id_to_edit)
-              .then(async function(msg){
-                if( msg.embeds[0].title != eventInfo.richEmbed.title ){
-                  console.log( timestampPrefix() + "Reordered event ID: " + event.event_id + " from message ID: " + event.message_id + " to " + curr_event_message_id_to_edit );
-                  await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [curr_event_message_id_to_edit, event.event_id]);
+              if( curr_event_message_id_to_edit ) {
+                await eventChannel.fetchMessage(curr_event_message_id_to_edit)
+                .then(async function(msg){
+                  if( msg.embeds[0].title != eventInfo.richEmbed.title ){
+                    console.log( timestampPrefix() + "Reordered event ID: " + event.event_id + " from message ID: " + event.message_id + " to " + curr_event_message_id_to_edit );
+                    await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [curr_event_message_id_to_edit, event.event_id]);
 
-                  msg.edit( eventInfo.richEmbed )
-                  .then(async function(message){
-                    await message.clearReactions().then(async function(message){
-                      if( results.filter(row => row.type == "confirmed").length < 6 )
-                        await message.react('🆗');
-                      await message.react('🤔');
-                      await message.react('⛔');
+                    msg.edit( eventInfo.richEmbed )
+                    .then(async function(message){
+                      await message.clearReactions().then(async function(message){
+                        if( results.filter(row => row.type == "confirmed").length < 6 )
+                          await message.react('🆗');
+                        await message.react('🤔');
+                        await message.react('⛔');
+                      });
                     });
-                  });
-                }
-              });
+                  }
+                });
+              }
             });
           }
 

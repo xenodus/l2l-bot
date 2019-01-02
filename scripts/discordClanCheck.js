@@ -1,4 +1,4 @@
-const config = require('./config').production;
+const config = require('../config').production;
 const pool = config.getPool();
 const moment = require("moment");
 const Traveler = require('the-traveler').default;

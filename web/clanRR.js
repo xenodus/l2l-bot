@@ -1,10 +1,10 @@
-const config = require('./config').production;
+const config = require('../config').production;
 const pool = config.getPool();
 const moment = require("moment");
 
 const express = require('express');
 const app = express();
-const port = 8082;
+const port = 8080;
 
 const raids = {
 	'Levi': 'levi',
@@ -366,9 +366,10 @@ function rrDataTable(rows) {
 			<thead>
 				<tr>
 					<th class="no-sort"></th>
-					<th class="text-nowrap">Display Name</th>
-					<th class="text-nowrap">BNet ID</th>
-					<th class="text-nowrap">Last Login</th>`;
+					<th class="text-nowrap text-left">Display Name</th>
+					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-center">Clan</th>
+					<th class="text-nowrap text-left">Last Login</th>`;
 
 	Object.keys(raids).forEach(function(raid) {
 		str += `<th class="text-nowrap">`+raid+`</th>`;
@@ -387,7 +388,8 @@ function rrDataTable(rows) {
 			<td>`+(i+1)+`</td>
 			<td class="text-left">`+rows[i].username+`</td>
 			<td class="text-left">`+rows[i].bnet_id+`</td>
-			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
+			<td class="text-center">`+rows[i].clan_no+`</td>
+			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap text-left">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
 
 		let activityCount = 0;
 
@@ -480,6 +482,7 @@ function pvpDataTable(rows) {
 					<th class="no-sort"></th>
 					<th class="text-nowrap text-left">Display Name</th>
 					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-center">Clan</th>
 					<th class="text-nowrap text-right">KD</th>
 					<th class="text-nowrap text-right">KDA</th>
 					<th class="text-nowrap text-right">KAD</th>
@@ -504,6 +507,7 @@ function pvpDataTable(rows) {
 			<td>`+(i+1)+`</td>
 			<td class="text-left">`+rows[i].username+`</td>
 			<td class="text-left">`+rows[i].bnet_id+`</td>
+			<td class="text-center">`+rows[i].clan_no+`</td>
 			<td class="text-right">`+rows[i].kd+`</td>
 			<td class="text-right">`+rows[i].kda+`</td>
 			<td class="text-right">`+rows[i].kad+`</td>
