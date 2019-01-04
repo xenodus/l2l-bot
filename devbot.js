@@ -460,6 +460,11 @@ client.on("message", async function(message) {
     }
   }
 
+  if ( command === "food" ) {
+    message.author.send( foodList() );
+    message.delete();
+  }
+
   // Delete message after processed to keep channels clean
   if ( message.channel === eventChannel || message.channel === channel )
     message.delete();
@@ -543,6 +548,51 @@ function smartInputDetect(raidName='') {
   else if( scourgeMatches.includes(raidName.toLowerCase()) )
     return 'Scourge'
   else return '';
+}
+
+function foodList() {
+  let foodOptions = {
+    'Mcdonalds': 'https://www.mcdelivery.com.sg/sg/browse/menu.html',
+    'KFC': 'https://www.kfc.com.sg/Menu',
+    'Pizza Hut': 'https://www.pizzahut.com.sg/promotions/delivery',
+    'Dominos': 'https://www.dominos.com.sg/ordering/info',
+    'Canadian Pizza': 'https://www.canadian-pizza.com/pizzas',
+    'Sarpinos': 'https://sarpinos.com/sg/online-ordering/',
+    'Golden Pillow': 'http://www.goldenpillow933.com.sg/products.htm',
+    'Pastamania': 'http://www.pastamaniadelivery.sg/'
+  };
+
+  let metaFoodOptions = {
+    'Foodpanda': 'https://www.foodpanda.sg/',
+    'Honestbee': 'https://www.honestbee.sg/en/food',
+    'Deliveroo': 'https://deliveroo.com.sg',
+  };
+
+  let richEmbed = new Discord.RichEmbed()
+    .setColor("#4169E1")
+    .setAuthor("Butler", "https://cdn-images-1.medium.com/max/1600/1*RmcSmwPhUn8ljLiiwYxK0A.png");
+
+  let foodOptionsKeys = Object.keys(foodOptions).sort();
+  let str = '';
+
+  for(var i=0; i<foodOptionsKeys.length; i++) {
+    str += "["+foodOptionsKeys[i]+"]("+foodOptions[foodOptionsKeys[i]]+")\n";
+  }
+
+  richEmbed.addField("Direct Food Deliveries", str, true);
+
+  let metaFoodOptionsKeys = Object.keys(metaFoodOptions).sort();
+  str = '';
+
+  for(var i=0; i<metaFoodOptionsKeys.length; i++) {
+    str += "["+metaFoodOptionsKeys[i]+"]("+metaFoodOptions[metaFoodOptionsKeys[i]]+")\n";
+  }
+
+  richEmbed.addField("3rd Party Food Deliveries", str, true);
+
+  richEmbed.addField("\u200b", "Want something added to the list? Let <@!154572358051430400> know!");
+
+  return richEmbed;
 }
 
 /**************************************************************
