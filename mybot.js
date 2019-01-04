@@ -188,6 +188,7 @@ client.on("message", async function(message) {
             let eventID = parseInt(args[1]);
 
             if ( eventID ) {
+              args.splice(1, 1);
               let eventName = raidEvent.parseEventNameDescription(args).eventName;
               let eventDescription = raidEvent.parseEventNameDescription(args).eventDescription;
               let event_date_string = getEventDatetimeString(eventName);
