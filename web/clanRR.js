@@ -119,6 +119,11 @@ function simpleHTML(results, pvp_results, discord_results) {
 			[class^="rank-legend"] {
 				color: orange;
 			}
+			.bnet_id {
+				margin-top: 5px;
+				color: #4169E1;
+				display: block;
+			}
 			</style>
 		</head>
 		<body style="padding: 30px;">
@@ -366,8 +371,7 @@ function rrDataTable(rows) {
 			<thead>
 				<tr>
 					<th class="no-sort"></th>
-					<th class="text-nowrap text-left">Display Name</th>
-					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-left">Name / Battle.net ID</th>
 					<th class="text-nowrap text-center">Clan</th>
 					<th class="text-nowrap text-left">Last Login</th>`;
 
@@ -383,11 +387,12 @@ function rrDataTable(rows) {
 
 	/* Data */
 	for(var i=0; i<rows.length; i++) {
+		bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
+
 		str += `
 		<tr>
 			<td>`+(i+1)+`</td>
-			<td class="text-left">`+rows[i].username+`</td>
-			<td class="text-left">`+rows[i].bnet_id+`</td>
+			<td class="text-left">`+rows[i].username+bnetId+`</td>
 			<td class="text-center">`+rows[i].clan_no+`</td>
 			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap text-left">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
 
@@ -480,8 +485,7 @@ function pvpDataTable(rows) {
 			<thead>
 				<tr>
 					<th class="no-sort"></th>
-					<th class="text-nowrap text-left">Display Name</th>
-					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-left">Name / Battle.net ID</th>
 					<th class="text-nowrap text-center">Clan</th>
 					<th class="text-nowrap text-right">KD</th>
 					<th class="text-nowrap text-right">KDA</th>
@@ -498,6 +502,7 @@ function pvpDataTable(rows) {
 	/* Data */
 	for(var i=0; i<rows.length; i++) {
 
+		bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
 		glory_rank = rows[i].glory_step == gloryRanks.length ? gloryRanks[gloryRanks.length-1] : gloryRanks[ rows[i].glory_step ];
 		valor_rank = rows[i].valor_step == valorRanks.length ? valorRanks[valorRanks.length-1] : valorRanks[ rows[i].valor_step ];
 		infamy_rank = rows[i].infamy_step == infamyRanks.length ? infamyRanks[infamyRanks.length-1] : infamyRanks[ rows[i].infamy_step ];
@@ -505,8 +510,7 @@ function pvpDataTable(rows) {
 		str += `
 		<tr>
 			<td>`+(i+1)+`</td>
-			<td class="text-left">`+rows[i].username+`</td>
-			<td class="text-left">`+rows[i].bnet_id+`</td>
+			<td class="text-left">`+rows[i].username+bnetId+`</td>
 			<td class="text-center">`+rows[i].clan_no+`</td>
 			<td class="text-right">`+rows[i].kd+`</td>
 			<td class="text-right">`+rows[i].kda+`</td>

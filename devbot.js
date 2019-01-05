@@ -272,10 +272,6 @@ client.on("message", async function(message) {
           message.author.send(config.eventHelpTxt);
           break;
 
-        case "clear":
-          raidEvent.getEvents();
-          break;
-
         default:
           if( smartInputDetect(args[0]) ) {
             raidEvent.search( args[0], message.author );
@@ -462,7 +458,6 @@ client.on("message", async function(message) {
 
   if ( command === "food" ) {
     message.author.send( foodList() );
-    message.delete();
   }
 
   // Delete message after processed to keep channels clean

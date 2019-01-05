@@ -1,8 +1,8 @@
 const config = require('../config').production;
 const pool = config.getPool();
 const moment = require("moment");
-var Traveler = require('the-traveler').default;
-let axios = require('axios');
+const Traveler = require('the-traveler').default;
+const axios = require('axios');
 
 const traveler = new Traveler({
     apikey: config.bungieAPIKey,
@@ -10,9 +10,12 @@ const traveler = new Traveler({
     debug: false
 });
 
+const Discord = require("discord.js");
+const client = new Discord.Client();
+
 // Concat with Destiny membershipID
 const raidReportURL = 'https://b9bv2wd97h.execute-api.us-west-2.amazonaws.com/prod/api/player/';
-const serverID = 372462137651757066;
+const serverID = '372462137651757066';
 
 var raidActivityHash = {
 	'levi': [2693136600, 2693136601, 2693136602, 2693136603, 2693136604, 2693136605],
@@ -69,17 +72,83 @@ pool.query("SELECT username, raid FROM interest_list WHERE server_id = ? AND rai
 
 	for( raid in interestList2Purge ) {
 		for( username in interestList2Purge[raid] ) {
-			//console.log( username );
-			//console.log( raid );
-			//console.log( interestList2Purge[raid][username] );
-
 			await pool.query("DELETE FROM interest_list WHERE username = ? AND server_id = ? AND raid = ?", [username, serverID, raid]);
 		}
 	}
 
 	console.log( "---------- Exit Purge Check at " + moment().format() + " ----------" );
+
+	await purgeNonMembers();
+
 	process.exit();
 });
+
+async function purgeNonMembers() {
+	await client.login(config.token).then(async function(){
+		let discordMembersID = client.guilds.get(serverID).members
+		.map(function(member){
+			return member.user.id;
+		});
+
+		let purgeListIDs = await pool.query("SELECT distinct(user_id) FROM interest_list WHERE server_id = ?", [serverID])
+		.then(function(result){
+			return result.map(result => { return result.user_id });
+		})
+		.catch(function(e){
+			return [];
+		});
+
+		let nonMembers = [];
+
+		for(var i=0; i<purgeListIDs.length; i++) {
+			if( discordMembersID.includes( purgeListIDs[i] ) === false )
+				nonMembers.push(purgeListIDs[i]);
+		}
+
+		if( nonMembers.length > 0 ) {
+			console.log( '---------- Removing non-members ----------' );
+			console.log( nonMembers );
+
+			await pool.query("DELETE FROM interest_list WHERE server_id = ? AND user_id IN (?)", [serverID, nonMembers]);
+			console.log( '---------- Finished removing non-members ----------' );
+		}
+		else
+			console.log( '---------- No non-members found ----------' );
+
+		return client.destroy();
+	});
+}
+
+async function updateNames() {
+	await client.login(config.token).then(async function(){
+		let interestListIDs = await pool.query("SELECT distinct(user_id) FROM interest_list WHERE server_id = ?", [serverID])
+		.then(function(result){
+			return result.map(result => { return result.user_id });
+		})
+		.catch(function(e){
+			return [];
+		});
+
+		let discordMembers = client.guilds.get(serverID).members
+		.filter(function(member){
+			return interestListIDs.includes(member.id);
+		})
+		.map(function(member){
+			return {
+				discord_id: member.user.id,
+				discord_username: member.user.username,
+				discord_nickname: member.nickname
+			}
+		});
+
+		for(var i=0;i<discordMembers.length;i++) {
+			let username = discordMembers[i].discord_nickname ? discordMembers[i].discord_nickname : discordMembers[i].discord_username;
+			await pool.query("UPDATE interest_list SET username = ? WHERE user_id = ? AND server_id = ?", [username, discordMembers[i].discord_id, serverID]);
+		}
+
+		return client.destroy();
+	});
+}
 
 async function purgeCheck(username, raidname) {
 	var userID = username;
