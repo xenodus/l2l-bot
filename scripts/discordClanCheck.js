@@ -1,3 +1,7 @@
+/********************************
+Script retired as Bungie API doesn't give updated Battle.net ID if user has changed them
+*********************************/
+
 const config = require('../config').production;
 const pool = config.getPool();
 const moment = require("moment");

@@ -67,18 +67,16 @@ const infamyRanks = [
 app.get('/', async function(req, res){
 	rr_results = await pool.query("SELECT * FROM clan_raid_report");
 	pvp_results = await pool.query("SELECT * FROM clan_pvp_stats");
-	discord_results = await pool.query("SELECT * FROM clan_discord");
-	await res.write( simpleHTML( rr_results, pvp_results, discord_results ) ); //write a response to the client
+	await res.write( simpleHTML( rr_results, pvp_results ) ); //write a response to the client
 	await res.end(); //end the response
 });
 
 app.listen(port, () => console.log(`SGE ClanRR listening on port ${port}!`));
 
-function simpleHTML(results, pvp_results, discord_results) {
+function simpleHTML(results, pvp_results) {
 
 	var rows = JSON.parse(JSON.stringify(results));
 	var pvp_rows = JSON.parse(JSON.stringify(pvp_results));
-	var discord_rows = JSON.parse(JSON.stringify(discord_results));
 
 	return `<html>
 		<head>
@@ -119,6 +117,11 @@ function simpleHTML(results, pvp_results, discord_results) {
 			[class^="rank-legend"] {
 				color: orange;
 			}
+			.bnet_id {
+				margin-top: 5px;
+				color: #4169E1;
+				display: block;
+			}
 			</style>
 		</head>
 		<body style="padding: 30px;">
@@ -133,9 +136,6 @@ function simpleHTML(results, pvp_results, discord_results) {
 				  </li>
 				  <li class="nav-item">
 				    <a class="nav-link" id="pills-charts-tab" data-toggle="pill" href="#pills-charts" role="tab" aria-controls="pills-charts" aria-selected="false">Charts</a>
-				  </li>
-				  <li class="nav-item">
-				    <a class="nav-link" id="pills-discord-tab" data-toggle="pill" href="#pills-discord" role="tab" aria-controls="pills-discord" aria-selected="false">Clan Discord Names</a>
 				  </li>
 				</ul>
 				<div class="tab-content" id="pills-tabContent">
@@ -173,17 +173,11 @@ function simpleHTML(results, pvp_results, discord_results) {
 						</div>
 						`+ pvpDataTable(pvp_rows) +`
 				  </div>
-				  <div class="tab-pane fade" id="pills-discord" role="tabpanel" aria-labelledby="pills-discord-tab">
-						<h1>Members that are MIA or with non matching Battle.net ID in Discord</h1>
-						<h6>Last Updated: `+ moment(discord_rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically every 5 minutes</h6>
-						`+ discordDataTable(discord_rows) +`
-				  </div>
 				</div>
 
 				<script>
 					const memberData = `+JSON.stringify(results)+`;
 					const memberPVPData = `+JSON.stringify(pvp_results)+`;
-					const memberDiscordData = `+JSON.stringify(discord_results)+`;
 					const raids = `+JSON.stringify(raids)+`;
 
 					$(document).ready(function(){
@@ -209,17 +203,6 @@ function simpleHTML(results, pvp_results, discord_results) {
 			        "order": [[ 1, 'asc' ]]
 						});
 
-						let discord_table = $("#discord_table").DataTable({
-							paging: false,
-							fixedHeader: true,
-			        "columnDefs": [ {
-			            "searchable": false,
-			            "orderable": false,
-			            "targets": 0
-			        } ],
-			        "order": [[ 1, 'asc' ]]
-						});
-
 				    rr_table.on( 'order.dt search.dt', function () {
 				        rr_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
 				            cell.innerHTML = i+1;
@@ -228,12 +211,6 @@ function simpleHTML(results, pvp_results, discord_results) {
 
 				    pvp_table.on( 'order.dt search.dt', function () {
 				        pvp_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
-				            cell.innerHTML = i+1;
-				        } );
-				    } ).draw();
-
-				    discord_table.on( 'order.dt search.dt', function () {
-				        discord_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
 				            cell.innerHTML = i+1;
 				        } );
 				    } ).draw();
@@ -366,9 +343,9 @@ function rrDataTable(rows) {
 			<thead>
 				<tr>
 					<th class="no-sort"></th>
-					<th class="text-nowrap">Display Name</th>
-					<th class="text-nowrap">BNet ID</th>
-					<th class="text-nowrap">Last Login</th>`;
+					<th class="text-nowrap text-left">Name / Battle.net ID</th>
+					<th class="text-nowrap text-center">Clan</th>
+					<th class="text-nowrap text-left">Last Login</th>`;
 
 	Object.keys(raids).forEach(function(raid) {
 		str += `<th class="text-nowrap">`+raid+`</th>`;
@@ -382,12 +359,14 @@ function rrDataTable(rows) {
 
 	/* Data */
 	for(var i=0; i<rows.length; i++) {
+		bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
+
 		str += `
 		<tr>
 			<td>`+(i+1)+`</td>
-			<td class="text-left">`+rows[i].username+`</td>
-			<td class="text-left">`+rows[i].bnet_id+`</td>
-			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
+			<td class="text-left">`+rows[i].username+bnetId+`</td>
+			<td class="text-center">`+rows[i].clan_no+`</td>
+			<td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap text-left">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
 
 		let activityCount = 0;
 
@@ -478,8 +457,8 @@ function pvpDataTable(rows) {
 			<thead>
 				<tr>
 					<th class="no-sort"></th>
-					<th class="text-nowrap text-left">Display Name</th>
-					<th class="text-nowrap text-left">BNet ID</th>
+					<th class="text-nowrap text-left">Name / Battle.net ID</th>
+					<th class="text-nowrap text-center">Clan</th>
 					<th class="text-nowrap text-right">KD</th>
 					<th class="text-nowrap text-right">KDA</th>
 					<th class="text-nowrap text-right">KAD</th>
@@ -495,6 +474,7 @@ function pvpDataTable(rows) {
 	/* Data */
 	for(var i=0; i<rows.length; i++) {
 
+		bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
 		glory_rank = rows[i].glory_step == gloryRanks.length ? gloryRanks[gloryRanks.length-1] : gloryRanks[ rows[i].glory_step ];
 		valor_rank = rows[i].valor_step == valorRanks.length ? valorRanks[valorRanks.length-1] : valorRanks[ rows[i].valor_step ];
 		infamy_rank = rows[i].infamy_step == infamyRanks.length ? infamyRanks[infamyRanks.length-1] : infamyRanks[ rows[i].infamy_step ];
@@ -502,8 +482,8 @@ function pvpDataTable(rows) {
 		str += `
 		<tr>
 			<td>`+(i+1)+`</td>
-			<td class="text-left">`+rows[i].username+`</td>
-			<td class="text-left">`+rows[i].bnet_id+`</td>
+			<td class="text-left">`+rows[i].username+bnetId+`</td>
+			<td class="text-center">`+rows[i].clan_no+`</td>
 			<td class="text-right">`+rows[i].kd+`</td>
 			<td class="text-right">`+rows[i].kda+`</td>
 			<td class="text-right">`+rows[i].kad+`</td>

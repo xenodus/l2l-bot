@@ -19,6 +19,7 @@ const infamy_hash = 2772425241; // gambit
 // Get Clan
 let clanMembersInfo = [];
 
+console.log("\n\n\n\n" + timestampPrefix() + "---- BEGIN GET PVP STATS SCRIPT ----");
 console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
 getClanMembers(clanIDs)
@@ -60,6 +61,7 @@ getClanMembers(clanIDs)
 				}
 
 				console.log(timestampPrefix() + "Finished!");
+				console.log(timestampPrefix() + "---- END GET PVP STATS SCRIPT ----" + "\n\n\n\n");
 				process.exit();
 			})
 		})
@@ -82,7 +84,7 @@ async function getClanMembers(clanIDs) {
 
 						if( memberRecords[i].bungieNetUserInfo && memberRecords[i].bungieNetUserInfo.membershipId ) {
 
-							// Retrieve from DB is info exists
+							// Retrieve from DB if info exists
 							bnetID = await pool.query("SELECT * FROM destiny_user WHERE bungieId = ? LIMIT 1", [memberRecords[i].bungieNetUserInfo.membershipId])
 							.then(function(r){
 								if( r.length > 0 ) {
@@ -102,6 +104,10 @@ async function getClanMembers(clanIDs) {
 											return r.data.Response.blizzardDisplayName;
 										}
 									}
+									return '';
+								})
+								.catch(function(e){
+									console.log( timestampPrefix() + 'Error fetching BNetID for: ', memberRecords[i].destinyUserInfo.displayName );
 									return '';
 								});
 
@@ -160,11 +166,13 @@ async function getPVPStats(clanMembersInfo) {
 
 		await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']})
     .then(async function(r){
+    	console.log( timestampPrefix() + "Get Profile Success." );
       if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
         let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
 
         await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
         .then(async function(res){
+        	console.log( timestampPrefix() + "Get Account Stats Success." );
           if( res.status == 200 ) {
             clanMembersInfo[i].stats.kad = res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue : 0;
             clanMembersInfo[i].stats.kda = res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue : 0;
@@ -178,7 +186,8 @@ async function getPVPStats(clanMembersInfo) {
           }
         })
         .catch(function(e){
-          console.log(e);
+          //console.log(e);
+          console.log( timestampPrefix() + 'Error fetching PVP Stats for: ', clanMembersInfo[i] );
         });
 
         clanMembersInfo[i].stats.infamy = r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;

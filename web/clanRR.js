@@ -67,18 +67,16 @@ const infamyRanks = [
 app.get('/', async function(req, res){
 	rr_results = await pool.query("SELECT * FROM clan_raid_report");
 	pvp_results = await pool.query("SELECT * FROM clan_pvp_stats");
-	discord_results = await pool.query("SELECT * FROM clan_discord");
-	await res.write( simpleHTML( rr_results, pvp_results, discord_results ) ); //write a response to the client
+	await res.write( simpleHTML( rr_results, pvp_results ) ); //write a response to the client
 	await res.end(); //end the response
 });
 
 app.listen(port, () => console.log(`SGE ClanRR listening on port ${port}!`));
 
-function simpleHTML(results, pvp_results, discord_results) {
+function simpleHTML(results, pvp_results) {
 
 	var rows = JSON.parse(JSON.stringify(results));
 	var pvp_rows = JSON.parse(JSON.stringify(pvp_results));
-	var discord_rows = JSON.parse(JSON.stringify(discord_results));
 
 	return `<html>
 		<head>
@@ -139,9 +137,6 @@ function simpleHTML(results, pvp_results, discord_results) {
 				  <li class="nav-item">
 				    <a class="nav-link" id="pills-charts-tab" data-toggle="pill" href="#pills-charts" role="tab" aria-controls="pills-charts" aria-selected="false">Charts</a>
 				  </li>
-				  <li class="nav-item">
-				    <a class="nav-link" id="pills-discord-tab" data-toggle="pill" href="#pills-discord" role="tab" aria-controls="pills-discord" aria-selected="false">Clan Discord Names</a>
-				  </li>
 				</ul>
 				<div class="tab-content" id="pills-tabContent">
 				  <div class="tab-pane fade show active" id="pills-report" role="tabpanel" aria-labelledby="pills-report-tab">
@@ -178,17 +173,11 @@ function simpleHTML(results, pvp_results, discord_results) {
 						</div>
 						`+ pvpDataTable(pvp_rows) +`
 				  </div>
-				  <div class="tab-pane fade" id="pills-discord" role="tabpanel" aria-labelledby="pills-discord-tab">
-						<h1>Members that are MIA or with non matching Battle.net ID in Discord</h1>
-						<h6>Last Updated: `+ moment(discord_rows[0].last_updated).format("DD MMM YYYY h:mm A") +` &bull; List updates automatically every 5 minutes</h6>
-						`+ discordDataTable(discord_rows) +`
-				  </div>
 				</div>
 
 				<script>
 					const memberData = `+JSON.stringify(results)+`;
 					const memberPVPData = `+JSON.stringify(pvp_results)+`;
-					const memberDiscordData = `+JSON.stringify(discord_results)+`;
 					const raids = `+JSON.stringify(raids)+`;
 
 					$(document).ready(function(){
@@ -214,17 +203,6 @@ function simpleHTML(results, pvp_results, discord_results) {
 			        "order": [[ 1, 'asc' ]]
 						});
 
-						let discord_table = $("#discord_table").DataTable({
-							paging: false,
-							fixedHeader: true,
-			        "columnDefs": [ {
-			            "searchable": false,
-			            "orderable": false,
-			            "targets": 0
-			        } ],
-			        "order": [[ 1, 'asc' ]]
-						});
-
 				    rr_table.on( 'order.dt search.dt', function () {
 				        rr_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
 				            cell.innerHTML = i+1;
@@ -233,12 +211,6 @@ function simpleHTML(results, pvp_results, discord_results) {
 
 				    pvp_table.on( 'order.dt search.dt', function () {
 				        pvp_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
-				            cell.innerHTML = i+1;
-				        } );
-				    } ).draw();
-
-				    discord_table.on( 'order.dt search.dt', function () {
-				        discord_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
 				            cell.innerHTML = i+1;
 				        } );
 				    } ).draw();
