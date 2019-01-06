@@ -86,6 +86,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
 
   if( reaction.message.channel.name != eventChannelName ) return;
 
+  isAdmin = (reaction.message.member.roles.find(roles => roles.name === "Admin") || reaction.message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(user.id) || Object.keys(config.sherpaIDs).includes(user.id)) ? true : false;
   eventName = reaction.message.embeds[0].message.embeds[0].title ? reaction.message.embeds[0].message.embeds[0].title : "";
 
   if( eventName ) {
@@ -119,7 +120,18 @@ client.on('messageReactionAdd', async function(reaction, user) {
       }
 
       else if(reaction.emoji.name === "👋") {
-        raidEvent.pingEventSignups(eventID);
+
+        let creator_id = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? LIMIT 1", [message_id, serverID]).then(function(results){
+          return results[0].created_by;
+        })
+        .error(function(e){
+          return 0;
+        });
+
+        if( user.id == creator_id || isAdmin ) {
+          console.log("Sending event signup ping for message ID: " + message_id + " by: " + user.username);
+          raidEvent.pingEventSignups(eventID);
+        }
       }
     }
   }

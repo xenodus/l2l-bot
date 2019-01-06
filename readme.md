@@ -1,12 +1,12 @@
 # SG-Elites Destiny 2 Clan's Discord Bot
 
-Discord bot that helps manage raid events and learning list among other things. Come say hi or see the bot in action @ [https://discordapp.com/invite/qkUuhB7](https://discordapp.com/invite/qkUuhB7).
+Discord bot that help manage raid events and newbie learning list among other things. Come say hi and see the bot in action @ [https://discordapp.com/invite/qkUuhB7](https://discordapp.com/invite/qkUuhB7).
 
 ## Events
 
-Under each event's description, there exists 3 reaction emojis: :ok:, 🤔 and :no_entry:.
+3 reaction emojis: :ok:, 🤔 and :no_entry: and show under each event's description.
 
-Subscribe to an event by reacting :ok:, added to reserve list by reacting 🤔 and withdraw by reacting :no_entry:.
+Subscribe to an event by reacting :ok:, be added to the reserve list by reacting 🤔 and withdraw by reacting :no_entry:.
 
 **Command list**
 
@@ -15,19 +15,19 @@ Subscribe to an event by reacting :ok:, added to reserve list by reacting 🤔 a
 **Create**
 
 	!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"
-    
+
 **Edit**
 
 	!event edit 152 "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"
 
 **Delete**
 
-	!event delete 152"
-    
+	!event delete 152
+
 **Add user to event**
 
 	!event add 152 @xenodus
-    
+
 **Remove user from event**
 
 	!event remove 152 @xenodus
