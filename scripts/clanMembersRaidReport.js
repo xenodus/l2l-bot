@@ -187,9 +187,7 @@ async function getRaidInfo(clanMembersInfo) {
 			}
 		})
 		.catch(function(e){
-			if( e.response.status == 404 ) {
-				console.log(timestampPrefix() + "No raid info for " + displayName);
-			}
+			console.log(timestampPrefix() + "No raid info for " + displayName);
 		});
 
 		console.log( timestampPrefix() + (i+1) + " of " + clanMembersInfo.length + " clan members' raid info retrieved" );

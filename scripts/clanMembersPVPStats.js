@@ -1,8 +1,8 @@
 const config = require('../config').production;
 const pool = config.getPool();
 const moment = require("moment");
-var Traveler = require('the-traveler').default;
-let axios = require('axios');
+const Traveler = require('the-traveler').default;
+const axios = require('axios');
 
 const traveler = new Traveler({
     apikey: config.bungieAPIKey,
