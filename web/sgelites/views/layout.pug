@@ -50,7 +50,14 @@ html(lang="en")
           a.nav-item.nav-link.pl-3.pr-3.active(href='/leaderboards') Leaderboards
           a.nav-item.bg-warning.text-light.pl-3.pr-3.nav-link(href='https://www.bungie.net/en/ClanV2/Index?groupId=2754160', target="_blank") Join Us
 
-    .container-fluid.main-container
+    .container-fluid.main-container(style="min-height: 100vh;")
       block content
+
+    footer.container-fluid(style="background: rgba(0,0,0,0.7); font-size: 12px;")
+      .container.text-center.pt-3.pb-3
+        div &copy 2019 sgelites.com
+        div Developed by
+          a(href="https://www.bungie.net/en/Profile/4/4611686018474971535", target="_blank").ml-1 xenodus
+
 
     block footer
