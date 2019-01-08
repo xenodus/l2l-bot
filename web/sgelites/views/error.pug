@@ -1,0 +1,7 @@
+extends layout
+
+block content
+  .row.bg-transparent.text-light
+    .col-md-12.pt-4.pb-4
+      h1= "Error: " + error.status + " " + message
+      //pre #{error.stack}

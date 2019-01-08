@@ -5,6 +5,7 @@ const moment = require("moment");
 const express = require('express');
 const app = express();
 const port = 8082;
+const ip = '172.31.24.166';
 
 const raids = {
 	'Levi': 'levi',
@@ -80,7 +81,7 @@ app.get('/', async function(req, res){
 	await res.end(); //end the response
 });
 
-app.listen(port, () => console.log(`SGE ClanRR listening on port ${port}!`));
+app.listen(port, ip, () => console.log(`SGE ClanRR listening on port ${port}!`));
 
 function simpleHTML( data ) {
 
@@ -88,9 +89,19 @@ function simpleHTML( data ) {
 	var pvp_data = JSON.parse(JSON.stringify(data.pvp));
 	var pve_data = JSON.parse(JSON.stringify(data.pve));
 
-	return `<html>
+	return `
+	<!doctype html>
+	<html>
 		<head>
-			<title>SG-E Clan 1 & 2 Raid Report</title>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+			<title>[DEV] SG-E Clan 1 & 2 Raid Report</title>
+			<!--[if IE]><link rel="shortcut icon" href="favicon.ico"><![endif]-->
+			<!-- Touch Icons - iOS and Android 2.1+ 180x180 pixels in size. -->
+			<link rel="apple-touch-icon-precomposed" href="favicon.png">
+			<!-- Firefox, Chrome, Safari, IE 11+ and Opera. 196x196 pixels in size. -->
+			<link rel="icon" href="favicon.png">
+
 			<!-- JS -->
 			<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 			<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js"></script>
@@ -111,7 +122,7 @@ function simpleHTML( data ) {
 			<link rel="stylesheet" href="/css/style.css">
 		</head>
 		<body style="padding: 30px;">
-			<div class="container">
+			<div class="container-fluid">
 
 				<ul class="nav nav-pills" id="pills-tab" role="tablist">
 				  <li class="nav-item">
@@ -132,6 +143,8 @@ function simpleHTML( data ) {
 				</ul>
 				<div class="tab-content" id="pills-tabContent">
 					<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
+						<h1>SG-E Clan 1 & 2 Leaderboard</h1>
+						<hr/>
 					`+badges(data)+`
 					</div>
 				  <div class="tab-pane fade" id="pills-report" role="tabpanel" aria-labelledby="pills-report-tab">
@@ -530,8 +543,6 @@ function badges(data) {
 
 	let str = `
 	<div class="badge-container">
-		<h1>SG-E Leaderboard</h1>
-		<hr/>
 		<div class="row">
 	`;
 

@@ -1,0 +1,30 @@
+extends layout
+
+block header
+  script(src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js")
+  script(src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js")
+  script(src="https://cdn.datatables.net/fixedheader/3.1.5/js/dataTables.fixedHeader.min.js")
+
+  link(rel='stylesheet', href='https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css')
+  link(rel='stylesheet', href='https://cdn.datatables.net/fixedheader/3.1.5/css/fixedHeader.bootstrap4.min.css')
+
+block content
+  .row
+    .col-md-12.pt-4.pb-4
+      .events-container
+        h2 Events
+        p Sign up for events in our #raid_lfg channel on Discord.
+
+        #events-table-container
+
+block footer
+  script(src="/javascripts/events.js?4")
+  link(rel='stylesheet', href='/stylesheets/events.css?1')
+
+  script.
+    $(document).ready(function(){
+      let events = !{JSON.stringify(events)};
+
+      $("#events-table-container").html( eventDatatable(events) );
+      $("#events_table").addClass("bg-white text-dark");
+    });

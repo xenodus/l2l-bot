@@ -198,6 +198,10 @@ async function getPVPStats(clanMembersInfo) {
         clanMembersInfo[i].stats.valor_step = r.Response.characterProgressions.data[characterID].progressions[valor_hash].level ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].level : 0;
         clanMembersInfo[i].stats.glory_step = r.Response.characterProgressions.data[characterID].progressions[glory_hash].level ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].level : 0;
       }
+    })
+    .catch(function(e){
+      //console.log(e);
+      console.log( timestampPrefix() + 'Error fetching PVP Stats for: ', clanMembersInfo[i] );
     });
 	}
 

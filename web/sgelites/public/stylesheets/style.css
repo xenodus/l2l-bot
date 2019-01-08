@@ -1,0 +1,48 @@
+html {
+  background: #212833 url("https://www.bungie.net/img/theme/destiny/bgs/clan/clanprofilebackground.jpg") no-repeat center center fixed;
+  -webkit-background-size: cover;
+  background-size: cover;
+}
+
+body {
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  min-height: 100vh;
+  color: #fff;
+}
+a,
+div.bnet_id {
+  color: #6495ED;
+}
+.main-container {
+  font-size: 14px;
+  line-height: 20px;
+}
+nav small {
+  font-size: 14px;
+}
+nav .flag-icon {
+  margin-left: 8px;
+}
+.link-container i.fas,
+.link-container i.fab {
+  font-size: 140px;
+}
+/*************************************
+  Index
+/*************************************/
+.home-container {
+  min-height: 50vh;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.clan-logo {
+  max-height: 140px;
+  position: relative;
+  right: 2px;
+}
+/*************************************
+  Leaderboard
+/*************************************/
+.fixedHeader-floating {
+  color: #000;
+}
