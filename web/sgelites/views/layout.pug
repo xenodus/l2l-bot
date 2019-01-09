@@ -22,6 +22,10 @@ html(lang="en")
     //- Custom Style
     link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.1/css/flag-icon.min.css")
     link(rel='stylesheet', href='/stylesheets/style.css?30')
+    // - RPG Awesome
+    link(rel='stylesheet', href='/rpg-awesome/css/rpg-awesome.css')
+
+    script(src="/javascripts/common.js")
 
     // Global site tag (gtag.js) - Google Analytics
     script(async='', src='https://www.googletagmanager.com/gtag/js?id=UA-35918300-3')
@@ -33,27 +37,34 @@ html(lang="en")
     block header
 
   body.bg-transparent
-    nav.navbar.navbar-expand-lg.navbar-dark.bg-transparent.border-bottom.border-warning
-      a.navbar-brand(href='/') SG Elites [SG-E]
-        div
-          small A Destiny 2 Clan from
-            span.flag-icon.flag-icon-sg
+    header
+      nav.navbar.navbar-expand-lg.navbar-dark.bg-transparent.border-bottom.border-warning
+        a.navbar-brand(href='/') SG Elites [SG-E]
+          div
+            small A Destiny 2 Clan from
+              span.flag-icon.flag-icon-sg
 
-      button.navbar-toggler(type='button', data-toggle='collapse', data-target='#navbarNavAltMarkup', aria-controls='navbarNavAltMarkup', aria-expanded='false', aria-label='Toggle navigation')
-        span.navbar-toggler-icon
+        button.navbar-toggler(type='button', data-toggle='collapse', data-target='#navbarNavAltMarkup', aria-controls='navbarNavAltMarkup', aria-expanded='false', aria-label='Toggle navigation')
+          span.navbar-toggler-icon
 
-      #navbarNavAltMarkup.collapse.navbar-collapse.justify-content-end
-        .navbar-nav
-          a.nav-item.nav-link.pl-3.pr-3.active(href='/') Home
-          a.nav-item.nav-link.pl-3.pr-3.active(href='/roster') Roster
-          a.nav-item.nav-link.pl-3.pr-3.active(href='/events') Events
-          a.nav-item.nav-link.pl-3.pr-3.active(href='/leaderboards') Leaderboards
-          a.nav-item.bg-warning.text-light.pl-3.pr-3.nav-link(href='https://www.bungie.net/en/ClanV2/Index?groupId=2754160', target="_blank") Join Us
+        #navbarNavAltMarkup.collapse.navbar-collapse.justify-content-end
+          ul.navbar-nav
+            li.nav-item
+              a.nav-link.pl-3.pr-3.active(href='/') Home
+            li.nav-item
+              a.nav-link.pl-3.pr-3.active(href='/roster') Roster
+            li.nav-item
+              a.nav-link.pl-3.pr-3.active(href='/events') Events
+            li.nav-item
+              a.nav-link.pl-3.pr-3.active(href='/leaderboards') Leaderboards
 
-    .container-fluid.main-container(style="min-height: 100vh;")
+            li.nav-item
+              a.bg-warning.text-light.pl-3.pr-3.nav-link(href='https://www.bungie.net/en/ClanV2/Index?groupId=2754160', target="_blank") Join Us
+
+    .container-fluid.main-container(style="min-height: calc(100vh - 133px);")
       block content
 
-    footer.container-fluid(style="background: rgba(0,0,0,0.7); font-size: 12px;")
+    footer.container-fluid(style="background: rgba(0,0,0,0.7); font-size: 12px;").border-top.border-warning
       .container.text-center.pt-3.pb-3
         div &copy 2019 sgelites.com
         div Developed by

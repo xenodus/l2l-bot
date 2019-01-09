@@ -11,6 +11,8 @@ const traveler = new Traveler({
 });
 
 const raidReportURL = 'https://b9bv2wd97h.execute-api.us-west-2.amazonaws.com/prod/api/player/';
+const petraRunHash = 4177910003;
+const diamondRunHash = 2648109757;
 const raidActivityHash = {
 	'levi': [2693136600, 2693136601, 2693136602, 2693136603, 2693136604, 2693136605],
 	'levip': [417231112, 757116822, 1685065161, 2449714930, 3446541099, 3879860661],
@@ -60,6 +62,8 @@ getClanMembers(clanIDs)
 						sosp: member.raidCompletions.sosp,
 						lw: member.raidCompletions.lw,
 						sotp: member.raidCompletions.sotp,
+						petra_run: member.petra_run,
+						diamond_run: member.diamond_run,
 						last_online: member.last_online,
 						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
 					})
@@ -121,14 +125,18 @@ async function getClanMembers(clanIDs) {
 						}
 
 						let last_online = null;
+						let petra_run = 0;
+						let diamond_run = 0;
 
-						last_online = await traveler.getProfile(membershipType, memberRecords[i].destinyUserInfo.membershipId, { components: [100] })
+						await traveler.getProfile(membershipType, memberRecords[i].destinyUserInfo.membershipId, { components: [100, 900] })
 						.then(function(r){
 							last_online = r.Response.profile.data.dateLastPlayed;
-							last_online = moment(last_online.substr(0,10), "YYYY-MM-DD").isValid() ? moment(last_online.substr(0,10), "YYYY-MM-DD").format("YYYY-MM-DD") : '';
-							return last_online;
+							last_online = moment(last_online.substr(0,10), "YYYY-MM-DD").isValid() ? moment(last_online.substr(0,10), "YYYY-MM-DD").format("YYYY-MM-DD") : null;
+
+							petra_run = r.Response.profileRecords.data.records[petraRunHash].objectives[0].progress > 0 ? 1 : 0;
+							diamond_run = r.Response.profileRecords.data.records[diamondRunHash].objectives[0].progress > 0 ? 1 : 0;
 						}).catch(function(e){
-							return null;
+							//
 						});
 
 						await clanMembersInfo.push({
@@ -137,6 +145,8 @@ async function getClanMembers(clanIDs) {
 							bnetID: bnetID,
 							clanNo: parseInt(key) + 1,
 							last_online: last_online,
+							petra_run: petra_run,
+							diamond_run: diamond_run,
 							raidCompletions: {
 								'levi': 0,
 								'levip': 0,

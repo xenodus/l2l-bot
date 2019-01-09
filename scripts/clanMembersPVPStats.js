@@ -15,6 +15,9 @@ const membershipType = 4;
 const glory_hash = 2000925172; // competitive
 const valor_hash = 3882308435; // quickplay
 const infamy_hash = 2772425241; // gambit
+const valor_reset_hash = 115001349;
+const infamy_reset_hash = 3901785488;
+const gold_medals_hash = [4230088036, 1371679603, 3882642308, 1413337742, 2857093873, 1271667367, 3324094091];
 
 // Get Clan
 let clanMembersInfo = [];
@@ -43,6 +46,8 @@ getClanMembers(clanIDs)
 						username: member.displayName,
 						bnet_id: member.bnetID,
 						clan_no: member.clanNo,
+            triumph: member.stats.triumph,
+            gold_medals: member.stats.gold_medals,
 						kd: member.stats.kd,
 						kad: member.stats.kad,
 						kda: member.stats.kda,
@@ -52,10 +57,12 @@ getClanMembers(clanIDs)
 						valor_step: member.stats.valor_step,
 						glory_step: member.stats.glory_step,
 						infamy_step: member.stats.infamy_step,
-						bestSingleGameKills: member.stats.bestSingleGameKills,
-						bestSingleGameKills_activityID: member.stats.bestSingleGameKills_activityID,
-						bestSingleGameScore: member.stats.bestSingleGameScore,
-						bestSingleGameScore_activityID: member.stats.bestSingleGameScore_activityID,
+            valor_resets: member.stats.valor_resets,
+            infamy_resets: member.stats.infamy_resets,
+						//bestSingleGameKills: member.stats.bestSingleGameKills,
+						//bestSingleGameKills_activityID: member.stats.bestSingleGameKills_activityID,
+						//bestSingleGameScore: member.stats.bestSingleGameScore,
+						//bestSingleGameScore_activityID: member.stats.bestSingleGameScore_activityID,
 						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
 					})
 				}
@@ -126,19 +133,23 @@ async function getClanMembers(clanIDs) {
 							bnetID: bnetID,
 							clanNo: parseInt(key) + 1,
 							stats: {
+                'triumph': 0,
+                'gold_medals': 0,
 								'kd': 0,
 								'kad': 0,
 								'kda': 0,
-								'bestSingleGameKills': 0,
-								'bestSingleGameKills_activityID': 0,
-								'bestSingleGameScore': 0,
-								'bestSingleGameScore_activityID': 0,
+								//'bestSingleGameKills': 0,
+								//'bestSingleGameKills_activityID': 0,
+								//'bestSingleGameScore': 0,
+								//'bestSingleGameScore_activityID': 0,
 								'glory': 0,
 								'valor': 0,
 								'infamy': 0,
 								'glory_step': 0,
 								'valor_step': 0,
-								'infamy_step': 0
+								'infamy_step': 0,
+                'valor_resets': 0,
+                'infamy_resets': 0
 							}
 						});
 
@@ -164,11 +175,20 @@ async function getPVPStats(clanMembersInfo) {
 
 		console.log( timestampPrefix() + "Fetching PVP stat of " + (i+1) + " of " + clanMembersInfo.length + " members" );
 
-		await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']})
+		await traveler.getProfile(membershipType, membershipId, {components: ['100', '202', '900']})
     .then(async function(r){
     	console.log( timestampPrefix() + "Get Profile Success." );
-      if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
-        let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
+      if( r.Response.characterProgressions.data && Object.keys(r.Response.characterProgressions.data).length > 0 ) {
+        let characterID = Object.keys(r.Response.characterProgressions.data).shift();
+        let triumpPoints = r.Response.profileRecords.data.score;
+        let valorResets = r.Response.profileRecords.data.records[valor_reset_hash].objectives[0].progress ? r.Response.profileRecords.data.records[valor_reset_hash].objectives[0].progress : 0;
+        let infamyResets = r.Response.profileRecords.data.records[infamy_reset_hash].objectives[0].progress ? r.Response.profileRecords.data.records[infamy_reset_hash].objectives[0].progress : 0;
+        let goldMedals = 0;
+
+        for( var index in gold_medals_hash ) {
+          let hash = gold_medals_hash[index];
+          goldMedals += r.Response.profileRecords.data.records[hash].objectives[0].progress ? r.Response.profileRecords.data.records[hash].objectives[0].progress : 0;
+        }
 
         await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
         .then(async function(res){
@@ -178,17 +198,21 @@ async function getPVPStats(clanMembersInfo) {
             clanMembersInfo[i].stats.kda = res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue : 0;
             clanMembersInfo[i].stats.kd = res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue : 0;
 
-            clanMembersInfo[i].stats.bestSingleGameScore = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue : 0;
-            clanMembersInfo[i].stats.bestSingleGameScore_activityID = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId : 0;
-
-            clanMembersInfo[i].stats.bestSingleGameKills = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameKills.basic.displayValue : 0;
-            clanMembersInfo[i].stats.bestSingleGameKills_activityID = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameKills.activityId : 0;
+            //clanMembersInfo[i].stats.bestSingleGameScore = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue : 0;
+            //clanMembersInfo[i].stats.bestSingleGameScore_activityID = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId : 0;
+            //clanMembersInfo[i].stats.bestSingleGameKills = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameKills.basic.displayValue : 0;
+            //clanMembersInfo[i].stats.bestSingleGameKills_activityID = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameKills.activityId : 0;
           }
         })
         .catch(function(e){
           //console.log(e);
           console.log( timestampPrefix() + 'Error fetching PVP Stats for: ', clanMembersInfo[i] );
         });
+
+        clanMembersInfo[i].stats.gold_medals = goldMedals;
+        clanMembersInfo[i].stats.triumph = triumpPoints;
+        clanMembersInfo[i].stats.valor_resets = valorResets;
+        clanMembersInfo[i].stats.infamy_resets = infamyResets;
 
         clanMembersInfo[i].stats.infamy = r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
         clanMembersInfo[i].stats.valor = r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
@@ -197,6 +221,8 @@ async function getPVPStats(clanMembersInfo) {
         clanMembersInfo[i].stats.infamy_step = r.Response.characterProgressions.data[characterID].progressions[infamy_hash].level ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].level : 0;
         clanMembersInfo[i].stats.valor_step = r.Response.characterProgressions.data[characterID].progressions[valor_hash].level ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].level : 0;
         clanMembersInfo[i].stats.glory_step = r.Response.characterProgressions.data[characterID].progressions[glory_hash].level ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].level : 0;
+
+        console.log( clanMembersInfo[i] );
       }
     })
     .catch(function(e){

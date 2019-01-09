@@ -25,9 +25,10 @@ getClanMembers(clanIDs)
 
 	if( clanMembersInfo.length > 0 ) {
 		getPVEStats(clanMembersInfo)
-		.then(function(clanMembersInfo){
+		.then(async function(clanMembersInfo){
 			//console.log( clanMembersInfo );
-			console.log(timestampPrefix() + "Performing step 3 of 4: Truncating table");
+			console.log(timestampPrefix() + "Performing step 3 of 4: Truncating tables");
+			await pool.query("TRUNCATE TABLE clan_weapon_stats");
 			pool.query("TRUNCATE TABLE clan_pve_stats")
 			.then(async function(){
 				console.log(timestampPrefix() + "Performing step 4 of 4: Inserting records");
@@ -50,6 +51,30 @@ getClanMembers(clanIDs)
 						weaponKillsGrenade: member.stats.weaponKillsGrenade,
 						publicEventsCompleted: member.stats.publicEventsCompleted,
 						heroicPublicEventsCompleted: member.stats.heroicPublicEventsCompleted,
+						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
+					});
+
+					await pool.query("INSERT INTO clan_weapon_stats SET ?", {
+						user_id: member.membershipId,
+						username: member.displayName,
+						bnet_id: member.bnetID,
+						clan_no: member.clanNo,
+						weaponKillsAutoRifle: member.stats.weaponKillsAutoRifle,
+						weaponKillsBeamRifle: member.stats.weaponKillsBeamRifle,
+						weaponKillsBow: member.stats.weaponKillsBow,
+						weaponKillsFusionRifle: member.stats.weaponKillsFusionRifle,
+						weaponKillsHandCannon: member.stats.weaponKillsHandCannon,
+						weaponKillsTraceRifle: member.stats.weaponKillsTraceRifle,
+						weaponKillsPulseRifle: member.stats.weaponKillsPulseRifle,
+						weaponKillsRocketLauncher: member.stats.weaponKillsRocketLauncher,
+						weaponKillsScoutRifle: member.stats.weaponKillsScoutRifle,
+						weaponKillsShotgun: member.stats.weaponKillsShotgun,
+						weaponKillsSniper: member.stats.weaponKillsSniper,
+						weaponKillsSubmachinegun: member.stats.weaponKillsSubmachinegun,
+						weaponKillsRelic: member.stats.weaponKillsRelic,
+						weaponKillsSideArm: member.stats.weaponKillsSideArm,
+						weaponKillsSword: member.stats.weaponKillsSword,
+						weaponKillsGrenadeLauncher: member.stats.weaponKillsGrenadeLauncher,
 						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
 					})
 				}
@@ -130,6 +155,24 @@ async function getClanMembers(clanIDs) {
 								'weaponKillsGrenade': 0,
 								'publicEventsCompleted': 0,
 								'heroicPublicEventsCompleted': 0,
+
+								// Weapons
+								'weaponKillsAutoRifle': 0,
+								'weaponKillsBeamRifle': 0,
+								'weaponKillsBow': 0,
+								'weaponKillsFusionRifle': 0,
+								'weaponKillsHandCannon': 0,
+								'weaponKillsTraceRifle': 0,
+								'weaponKillsPulseRifle': 0,
+								'weaponKillsRocketLauncher': 0,
+								'weaponKillsScoutRifle': 0,
+								'weaponKillsShotgun': 0,
+								'weaponKillsSniper': 0,
+								'weaponKillsSubmachinegun': 0,
+								'weaponKillsRelic': 0,
+								'weaponKillsSideArm': 0,
+								'weaponKillsSword': 0,
+								'weaponKillsGrenadeLauncher': 0,
 							}
 						});
 
@@ -169,6 +212,24 @@ async function getPVEStats(clanMembersInfo) {
         clanMembersInfo[i].stats.weaponKillsGrenade = res.data.Response.mergedAllCharacters.results.allPvE.allTime.weaponKillsGrenade.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvE.allTime.weaponKillsGrenade.basic.displayValue : 0;
         clanMembersInfo[i].stats.publicEventsCompleted = res.data.Response.mergedAllCharacters.results.allPvE.allTime.publicEventsCompleted.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvE.allTime.publicEventsCompleted.basic.displayValue : 0;
         clanMembersInfo[i].stats.heroicPublicEventsCompleted = res.data.Response.mergedAllCharacters.results.allPvE.allTime.heroicPublicEventsCompleted.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvE.allTime.heroicPublicEventsCompleted.basic.displayValue : 0;
+
+        // Weapons
+        clanMembersInfo[i].stats.weaponKillsAutoRifle = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsAutoRifle.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsAutoRifle.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsBeamRifle = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsBeamRifle.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsBeamRifle.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsBow = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsBow.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsBow.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsFusionRifle = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsFusionRifle.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsFusionRifle.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsHandCannon = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsHandCannon.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsHandCannon.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsTraceRifle = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsTraceRifle.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsTraceRifle.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsPulseRifle = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsPulseRifle.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsPulseRifle.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsRocketLauncher = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsRocketLauncher.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsRocketLauncher.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsScoutRifle = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsScoutRifle.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsScoutRifle.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsShotgun = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsShotgun.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsShotgun.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsSniper = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSniper.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSniper.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsSubmachinegun = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSubmachinegun.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSubmachinegun.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsRelic = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsRelic.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsRelic.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsSideArm = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSideArm.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSideArm.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsSword = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSword.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsSword.basic.displayValue : 0;
+        clanMembersInfo[i].stats.weaponKillsGrenadeLauncher = res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsGrenadeLauncher.basic.displayValue ? res.data.Response.mergedAllCharacters.merged.allTime.weaponKillsGrenadeLauncher.basic.displayValue : 0;
       }
     })
     .catch(function(e){

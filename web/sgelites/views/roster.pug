@@ -9,11 +9,11 @@ block header
   link(rel='stylesheet', href='https://cdn.datatables.net/fixedheader/3.1.5/css/fixedHeader.bootstrap4.min.css')
 
 block content
-  .row.bg-white.text-dark.pb-5
+  .row.pb-5
     .col-md-12
       h2.mt-3 Clan Roster
       .table-responsive
-        table#roster_table.display.table.table-striped
+        table#roster_table.display.table.table-striped.bg-white.text-dark
           thead
             tr
               th.no-sort
@@ -32,7 +32,7 @@ block content
                 td(data-sort=''+last_online_unix)=moment(member.last_online).format("DD MMM YYYY")
 
 block footer
-  link(rel='stylesheet', href='/stylesheets/roster.css?1')
+  link(rel='stylesheet', href='/stylesheets/roster.css?3')
 
   script.
     $(document).ready(function(){

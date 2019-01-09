@@ -1,69 +1,197 @@
+function triumphDataTable(rows) {
+  rows = JSON.parse(rows).triumph;
+
+  if( rows.length <= 0 )
+    return '';
+
+  /* Headers */
+  str = `
+  <div class="text-center">Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
+  <br/>
+  <div class="table-responsive">
+    <table id="triumph_table" class="display table table-striped">
+      <thead>
+        <tr>
+          <th class="no-sort"></th>
+          <th class="text-left">Name / Battle.net ID</th>
+          <th class="text-left">Clan</th>
+          <th class="text-right">Triumph</th>
+        </tr>
+    </thead>
+    <tbody>`;
+
+  /* Data */
+  for(var i=0; i<rows.length; i++) {
+    bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
+
+    str += `
+    <tr>
+      <td>`+(i+1)+`</td>
+      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].clan_no+`</td>
+      <td class="text-right">`+rows[i].triumph.toLocaleString()+`</td>
+    </tr>`;
+  }
+
+  str += `
+      </tbody>
+    </table>
+  </div>`;
+
+  return str;
+}
+
 function badges(data) {
 
   data = JSON.parse(data);
 
-  if( !data.pve || data.pve.length <= 0 ) {
+  if( data.pve.length <= 0 && data.pvp.length <= 0 && data.weapon.length <= 0 ) {
     return '';
   }
 
-  highest_raid_count = data.pve.reduce(function(prev, current){
-    return current.raid_count > prev.raid_count ? current : prev;
-  });
+  if( data.pve.length > 0 ) {
+    highest_raid_count = data.pve.reduce(function(prev, current){
+      return current.raid_count > prev.raid_count ? current : prev;
+    });
 
-  highest_pe_count = data.pve.reduce(function(prev, current){
-    return current.publicEventsCompleted > prev.publicEventsCompleted ? current : prev;
-  });
+    highest_pe_count = data.pve.reduce(function(prev, current){
+      return current.publicEventsCompleted > prev.publicEventsCompleted ? current : prev;
+    });
 
-  highest_activities_count = data.pve.reduce(function(prev, current){
-    return current.activitiesCleared > prev.activitiesCleared ? current : prev;
-  });
+    highest_activities_count = data.pve.reduce(function(prev, current){
+      return current.activitiesCleared > prev.activitiesCleared ? current : prev;
+    });
 
-  highest_super_count = data.pve.reduce(function(prev, current){
-    return current.weaponKillsSuper > prev.weaponKillsSuper ? current : prev;
-  });
+    highest_super_count = data.pve.reduce(function(prev, current){
+      return current.weaponKillsSuper > prev.weaponKillsSuper ? current : prev;
+    });
 
-  highest_melee_count = data.pve.reduce(function(prev, current){
-    return current.weaponKillsMelee > prev.weaponKillsMelee ? current : prev;
-  });
+    highest_melee_count = data.pve.reduce(function(prev, current){
+      return current.weaponKillsMelee > prev.weaponKillsMelee ? current : prev;
+    });
 
-  highest_grenade_count = data.pve.reduce(function(prev, current){
-    return current.weaponKillsGrenade > prev.weaponKillsGrenade ? current : prev;
-  });
+    highest_grenade_count = data.pve.reduce(function(prev, current){
+      return current.weaponKillsGrenade > prev.weaponKillsGrenade ? current : prev;
+    });
 
-  highest_kill_count = data.pve.reduce(function(prev, current){
-    return current.kills > prev.kills ? current : prev;
-  });
+    highest_kill_count = data.pve.reduce(function(prev, current){
+      return current.kills > prev.kills ? current : prev;
+    });
 
-  highest_death_count = data.pve.reduce(function(prev, current){
-    return current.deaths > prev.deaths ? current : prev;
-  });
+    highest_death_count = data.pve.reduce(function(prev, current){
+      return current.deaths > prev.deaths ? current : prev;
+    });
 
-  highest_suicide_count = data.pve.reduce(function(prev, current){
-    return current.suicides > prev.suicides ? current : prev;
-  });
+    highest_suicide_count = data.pve.reduce(function(prev, current){
+      return current.suicides > prev.suicides ? current : prev;
+    });
 
-  highest_kd_count = data.pve.reduce(function(prev, current){
-    return current.kd > prev.kd ? current : prev;
-  });
+    highest_kd_count = data.pve.reduce(function(prev, current){
+      return current.kd > prev.kd ? current : prev;
+    });
+  }
 
-  highest_glory_count = data.pvp.reduce(function(prev, current){
-    return current.glory > prev.glory ? current : prev;
-  });
+  if( data.pvp.length > 0 ) {
+    highest_glory_count = data.pvp.reduce(function(prev, current){
+      return current.glory > prev.glory ? current : prev;
+    });
 
-  highest_pvp_kd_count = data.pvp.reduce(function(prev, current){
-    return current.kd > prev.kd ? current : prev;
-  });
+    highest_pvp_kd_count = data.pvp.reduce(function(prev, current){
+      return current.kd > prev.kd ? current : prev;
+    });
 
-  highest_pvp_kda_count = data.pvp.reduce(function(prev, current){
-    return current.kda > prev.kda ? current : prev;
-  });
+    highest_pvp_kda_count = data.pvp.reduce(function(prev, current){
+      return current.kda > prev.kda ? current : prev;
+    });
 
-  highest_pvp_kad_count = data.pvp.reduce(function(prev, current){
-    return current.kad > prev.kad ? current : prev;
-  });
+    highest_pvp_kad_count = data.pvp.reduce(function(prev, current){
+      return current.kad > prev.kad ? current : prev;
+    });
 
-  badgeData = {
-    pve: {
+    highest_gold_medals_count = data.pvp.reduce(function(prev, current){
+      return current.gold_medals > prev.gold_medals ? current : prev;
+    });
+
+    highest_valor_resets_count = data.pvp.reduce(function(prev, current){
+      return current.valor_resets > prev.valor_resets ? current : prev;
+    });
+
+    highest_infamy_resets_count = data.pvp.reduce(function(prev, current){
+      return current.infamy_resets > prev.infamy_resets ? current : prev;
+    });
+
+    highest_triumph_count = data.pvp.reduce(function(prev, current){
+      return current.triumph > prev.triumph ? current : prev;
+    });
+  }
+
+  if( data.weapon.length > 0 ) {
+    /* Weapons */
+    highest_auto_rifle = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsAutoRifle > prev.weaponKillsAutoRifle ? current : prev;
+    });
+
+    highest_bow = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsBow > prev.weaponKillsBow ? current : prev;
+    });
+
+    highest_fusion_rifle = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsFusionRifle > prev.weaponKillsFusionRifle ? current : prev;
+    });
+
+    highest_hand_cannon = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsHandCannon > prev.weaponKillsHandCannon ? current : prev;
+    });
+
+    highest_trace_rifle = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsTraceRifle > prev.weaponKillsTraceRifle ? current : prev;
+    });
+
+    highest_pulse_rifle = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsPulseRifle > prev.weaponKillsPulseRifle ? current : prev;
+    });
+
+    highest_rocket_launcher = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsRocketLauncher > prev.weaponKillsRocketLauncher ? current : prev;
+    });
+
+    highest_scout_rifle = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsScoutRifle > prev.weaponKillsScoutRifle ? current : prev;
+    });
+
+    highest_shotgun = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsShotgun > prev.weaponKillsShotgun ? current : prev;
+    });
+
+    highest_sniper_rifle = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsSniper > prev.weaponKillsSniper ? current : prev;
+    });
+
+    highest_smg = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsSubmachinegun > prev.weaponKillsSubmachinegun ? current : prev;
+    });
+
+    highest_sidearm = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsSideArm > prev.weaponKillsSideArm ? current : prev;
+    });
+
+    highest_sword = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsSword > prev.weaponKillsSword ? current : prev;
+    });
+
+    highest_grenade_launcher = data.weapon.reduce(function(prev, current){
+      return current.weaponKillsGrenadeLauncher > prev.weaponKillsGrenadeLauncher ? current : prev;
+    });
+  }
+
+  let badgeData = {
+    pve: {},
+    pvp: {},
+    weapon: {}
+  }
+
+  if( data.pve.length > 0 ) {
+    badgeData.pve = {
       'highest_raid_count' : {
         badgeName: 'Tomb Raider',
         userId: highest_raid_count.bnet_id,
@@ -73,15 +201,15 @@ function badges(data) {
         icon: 'fas fa-dungeon'
       },
       'highest_pe_count' : {
-        badgeName: 'P.E. Teacher',
+        badgeName: 'The Socialite',
         userId: highest_pe_count.bnet_id,
         title: 'Public Events Completed:',
         count: highest_pe_count.publicEventsCompleted.toLocaleString(),
         color: 'blue',
-        icon: 'fas fa-dumbbell'
+        icon: 'fas fa-flag'
       },
       'highest_activities_count' : {
-        badgeName: 'Grinder',
+        badgeName: 'Steady Pom Pipi',
         userId: highest_activities_count.bnet_id,
         title: 'Activities Cleared:',
         count: highest_activities_count.activitiesCleared.toLocaleString(),
@@ -105,7 +233,7 @@ function badges(data) {
         icon: 'fas fa-fist-raised'
       },
       'highest_grenade_count' : {
-        badgeName: 'Grenadier',
+        badgeName: 'Chi Ba Boom',
         userId: highest_grenade_count.bnet_id,
         title: 'Grenade Kills:',
         count: highest_grenade_count.weaponKillsGrenade.toLocaleString(),
@@ -129,7 +257,7 @@ function badges(data) {
         icon: 'fas fa-ghost'
       },
       'highest_suicide_count' : {
-        badgeName: 'Suicide Squad',
+        badgeName: 'Aloha snack bar',
         userId: highest_suicide_count.bnet_id,
         title: 'Suicides:',
         count: highest_suicide_count.suicides.toLocaleString(),
@@ -144,9 +272,12 @@ function badges(data) {
         color: 'blue-dark',
         icon: 'fas fa-balance-scale'
       },
-    },
+    }
+  }
 
-    pvp: {
+  if( data.pvp.length > 0 ) {
+
+    badgeData.pvp = {
       'highest_glory_count' : {
         badgeName: 'Serial Killer',
         userId: highest_glory_count.bnet_id,
@@ -155,16 +286,165 @@ function badges(data) {
         color: 'green-dark',
         icon: 'fab fa-wolf-pack-battalion'
       },
+      'highest_gold_medals_count' : {
+        badgeName: '24K Magic',
+        userId: highest_gold_medals_count.bnet_id,
+        title: 'Gold Medals:',
+        count: highest_gold_medals_count.gold_medals.toLocaleString(),
+        color: 'gold',
+        icon: 'fas fa-medal'
+      },
       'highest_pvp_kd_count' : {
         badgeName: 'Death Dealer',
         userId: highest_pvp_kd_count.bnet_id,
         title: 'PvP Kill-Death Ratio:',
         count: highest_pvp_kd_count.kd.toLocaleString(),
         color: 'silver',
-        icon: 'fab fa-wolf-pack-battalion'
+        icon: 'ra ra-skull-trophy'
+      },
+      'highest_valor_resets_count' : {
+        badgeName: 'Crucifier',
+        userId: highest_valor_resets_count.bnet_id,
+        title: 'Valor Resets:',
+        count: highest_valor_resets_count.valor_resets.toLocaleString(),
+        color: 'red',
+        icon: 'ra ra-nails'
+      },
+      'highest_infamy_resets_count' : {
+        badgeName: 'Poker Face',
+        userId: highest_infamy_resets_count.bnet_id,
+        title: 'Infamy Resets:',
+        count: highest_infamy_resets_count.infamy_resets.toLocaleString(),
+        color: 'teal',
+        icon: 'ra ra-spades-card'
+      },
+      'highest_triumph_count' : {
+        badgeName: 'OCD',
+        userId: highest_triumph_count.bnet_id,
+        title: 'Triumph Points:',
+        count: highest_triumph_count.triumph.toLocaleString(),
+        color: 'yellow',
+        icon: 'fas fa-exclamation'
+      },
+    }
+  }
+
+  if( data.weapon.length > 0 ) {
+    badgeData.weapon = {
+      'highest_auto_rifle_count' : {
+        badgeName: 'Rambo',
+        userId: highest_auto_rifle.bnet_id,
+        title: 'Auto Rifle Kills:',
+        count: highest_auto_rifle.weaponKillsAutoRifle.toLocaleString(),
+        color: 'gold',
+        icon: 'ra ra-rifle'
+      },
+      'highest_bow' : {
+        badgeName: 'Legolas',
+        userId: highest_bow.bnet_id,
+        title: 'Bow Kills:',
+        count: highest_bow.weaponKillsBow.toLocaleString(),
+        color: 'blue',
+        icon: 'ra ra-supersonic-arrow'
+      },
+      'highest_fusion_rifle' : {
+        badgeName: 'Gogeta',
+        userId: highest_fusion_rifle.bnet_id,
+        title: 'Fusion Rifle Kills:',
+        count: highest_fusion_rifle.weaponKillsFusionRifle.toLocaleString(),
+        color: 'teal',
+        icon: 'ra ra-laser-blast'
+      },
+      'highest_hand_cannon' : {
+        badgeName: 'High Noon',
+        userId: highest_hand_cannon.bnet_id,
+        title: 'Hand Cannon Kills:',
+        count: highest_hand_cannon.weaponKillsHandCannon.toLocaleString(),
+        color: 'red',
+        icon: 'ra ra-revolver'
+      },
+      'highest_trace_rifle' : {
+        badgeName: 'Cat Trap',
+        userId: highest_trace_rifle.bnet_id,
+        title: 'Trace Rifle Kills:',
+        count: highest_trace_rifle.weaponKillsTraceRifle.toLocaleString(),
+        color: 'yellow',
+        icon: 'ra ra-target-laser'
+      },
+      'highest_pulse_rifle' : {
+        badgeName: 'headseeker',
+        userId: highest_pulse_rifle.bnet_id,
+        title: 'Pulse Rifle Kills:',
+        count: highest_pulse_rifle.weaponKillsPulseRifle.toLocaleString(),
+        color: 'green',
+        icon: 'ra ra-mp5'
+      },
+      'highest_rocket_launcher' : {
+        badgeName: 'Riven\'s Bane',
+        userId: highest_rocket_launcher.bnet_id,
+        title: 'Rocket Launcher Kills:',
+        count: highest_rocket_launcher.weaponKillsRocketLauncher.toLocaleString(),
+        color: 'purple',
+        icon: 'ra ra-cluster-bomb'
+      },
+      'highest_scout_rifle' : {
+        badgeName: 'Recee',
+        userId: highest_scout_rifle.bnet_id,
+        title: 'Scout Rifle Kills:',
+        count: highest_scout_rifle.weaponKillsScoutRifle.toLocaleString(),
+        color: 'orange',
+        icon: 'ra ra-targeted'
+      },
+      'highest_shotgun' : {
+        badgeName: 'Eat This!',
+        userId: highest_shotgun.bnet_id,
+        title: 'Shotgun Kills:',
+        count: highest_shotgun.weaponKillsShotgun.toLocaleString(),
+        color: 'pink',
+        icon: 'ra ra-musket'
+      },
+      'highest_sniper_rifle' : {
+        badgeName: 'Hitman',
+        userId: highest_sniper_rifle.bnet_id,
+        title: 'Sniper Rifle Kills:',
+        count: highest_sniper_rifle.weaponKillsSniper.toLocaleString(),
+        color: 'blue-dark',
+        icon: 'ra ra-targeted'
+      },
+      'highest_smg' : {
+        badgeName: 'watatatatata',
+        userId: highest_smg.bnet_id,
+        title: 'SMG Kills:',
+        count: highest_smg.weaponKillsSubmachinegun.toLocaleString(),
+        color: 'green-dark',
+        icon: 'ra ra-mp5'
+      },
+      'highest_sidearm' : {
+        badgeName: 'pewpewpew',
+        userId: highest_sidearm.bnet_id,
+        title: 'Sidearm Kills:',
+        count: highest_sidearm.weaponKillsSideArm.toLocaleString(),
+        color: 'silver',
+        icon: 'ra ra-crossed-pistols'
+      },
+      'highest_sword' : {
+        badgeName: 'Samurai X',
+        userId: highest_sword.bnet_id,
+        title: 'Sword Kills:',
+        count: highest_sword.weaponKillsSword.toLocaleString(),
+        color: 'gold',
+        icon: 'ra ra-sword'
+      },
+      'highest_grenade_launcher' : {
+        badgeName: 'Grenadier',
+        userId: highest_grenade_launcher.bnet_id,
+        title: 'Grenade Launcher Kills:',
+        count: highest_grenade_launcher.weaponKillsGrenadeLauncher.toLocaleString(),
+        color: 'blue',
+        icon: 'ra ra-grenade'
       }
     }
-  };
+  }
 
   let str = `
   <div class="badge-container">
@@ -215,6 +495,102 @@ function badges(data) {
 
   str += `
     </div>
+    <div>
+      <h2 class="text-center mb-3 mt-5">Top Weapon Kills</h2>
+    </div>
+    <div class="row">`;
+
+  for( key in badgeData.weapon ) {
+    str += `
+      <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12">
+        <div class="main-wrapper">
+          <div class="badge `+badgeData.weapon[key].color+`">
+            <div class="circle"> <i class="`+badgeData.weapon[key].icon+`"></i></div>
+            <div class="ribbon">`+badgeData.weapon[key].badgeName+`</div>
+          </div>
+          <div class="badge-description">
+            <div class="player">
+              <strong>`+badgeData.weapon[key].userId+`</strong>
+            </div>
+            <div class="stat">
+              `+badgeData.weapon[key].title+`<br/>`+badgeData.weapon[key].count+`
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  str += `
+    </div>
+  </div>`;
+
+  return str;
+}
+
+function weaponDataTable(rows) {
+  rows = JSON.parse(rows).weapon;
+
+  if( rows.length <= 0 )
+    return '';
+
+  /* Headers */
+  str = `
+  <div class="text-center">Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
+  <br/>
+  <div class="table-responsive">
+    <table id="weapon_table" class="display table table-striped">
+      <thead>
+        <tr>
+          <th class="no-sort"></th>
+          <th class="text-left">Name / Battle.net ID</th>
+          <th class="text-left">Clan</th>
+          <th class="text-right">Auto Rifle</th>
+          <th class="text-right">Bow</th>
+          <th class="text-right">Fusion Rifle</th>
+          <th class="text-right">Hand Cannon</th>
+          <th class="text-right">Trace Rifle</th>
+          <th class="text-right">Pulse Rifle</th>
+          <th class="text-right">Rocket Launcher</th>
+          <th class="text-right">Scout Rifle</th>
+          <th class="text-right">Shotgun</th>
+          <th class="text-right">Sniper</th>
+          <th class="text-right">SMG</th>
+          <th class="text-right">Sidearm</th>
+          <th class="text-right">Sword</th>
+          <th class="text-right">Grenade Launcher</th>
+        </tr>
+    </thead>
+    <tbody>`;
+
+  for(var i=0;i<rows.length;i++) {
+    bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
+
+    str += `
+    <tr>
+      <td>`+(i+1)+`</td>
+      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].clan_no+`</td>
+      <td class="text-right">`+rows[i].weaponKillsAutoRifle.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsBow.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsFusionRifle.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsHandCannon.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsTraceRifle.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsPulseRifle.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsRocketLauncher.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsScoutRifle.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsShotgun.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsSniper.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsSubmachinegun.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsSideArm.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsSword.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsGrenadeLauncher.toLocaleString()+`</td>
+    </tr>`;
+  }
+
+  str += `
+      </tbody>
+    </table>
   </div>`;
 
   return str;
@@ -240,7 +616,7 @@ function raidDataTable(rows) {
 
   /* Headers */
   str = `
-  <div>Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
+  <div class="text-center">Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
   <br/>
   <div class="table-responsive">
     <table id="raid_table" class="display table table-striped">
@@ -248,14 +624,18 @@ function raidDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-center">Clan</th>
-          <th class="text-left">Last Login</th>`;
+          <th class="text-left">Clan</th>`;
 
   Object.keys(raids).forEach(function(raid) {
-    str += `<th class="text-nowrap">`+raid+`</th>`;
+    str += `<th class="text-nowrap text-right">`+raid+`</th>`;
+
+    if( raid == 'LW' )
+      str += `<th class="text-center">Petra</th>`;
+    else if( raid == 'SoTP' )
+      str += `<th class="text-center">Diamond</th>`;
   });
 
-  str += `<th class="text-nowrap">Total</th>`;
+  str += `<th class="text-left">Total</th>`;
   str +=
       `</tr>
     </thead>
@@ -269,17 +649,22 @@ function raidDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].username+bnetId+`</td>
-      <td class="text-center">`+rows[i].clan_no+`</td>
-      <td data-sort="`+moment(rows[i].last_online).unix()+`" class="text-nowrap text-left">`+moment(rows[i].last_online).format("DD MMM YYYY")+`</td>`;
+      <td class="text-left">`+rows[i].clan_no+`</td>`;
 
     let activityCount = 0;
 
     Object.keys(raids).forEach(function(raid) {
-      str += `<td class="text-center">`+rows[i][raids[raid]]+`</td>`;
+      str += `<td class="text-left">`+rows[i][raids[raid]]+`</td>`;
+
+      if( raid == 'LW' )
+        str += `<td class="text-center" data-sort="`+rows[i].petra_run+`">`+(rows[i].petra_run>0 ?'<i class="fas fa-check text-success"></i>':'<i class="fas fa-times text-danger"></i>')+`</td>`;
+      else if( raid == 'SoTP' )
+        str += `<td class="text-center" data-sort="`+rows[i].petra_run+`">`+(rows[i].diamond_run>0 ?'<i class="fas fa-check text-success"></i>':'<i class="fas fa-times text-danger"></i>')+`</td>`;
+
       activityCount+= rows[i][raids[raid]];
     });
 
-    str += `<td class="text-center">`+activityCount+`</td>`;
+    str += `<td class="text-left">`+activityCount+`</td>`;
     str += `</tr>`;
   }
 
@@ -300,7 +685,7 @@ function pveDataTable(rows) {
 
   /* Headers */
   str = `
-  <div>Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
+  <div class="text-center">Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
   <br/>
   <div class="table-responsive">
     <table id="pve_table" class="display table table-striped">
@@ -308,17 +693,17 @@ function pveDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-center">Clan</th>
-          <th class="text-center">Kills</th>
-          <th class="text-center">Deaths</th>
-          <th class="text-center">Suicides</th>
-          <th class="text-center">KD</th>
-          <th class="text-center">Super Kills</th>
-          <th class="text-center">Melee Kills</th>
-          <th class="text-center">Grenade Kills</th>
-          <th class="text-center">Activities Cleared</th>
-          <th class="text-center">Raids Cleared</th>
-          <th class="text-center">Public Events Completed</th>
+          <th class="text-left">Clan</th>
+          <th class="text-right">Kills</th>
+          <th class="text-right">Deaths</th>
+          <th class="text-right">Suicides</th>
+          <th class="text-right">KD</th>
+          <th class="text-right">Super Kills</th>
+          <th class="text-right">Melee Kills</th>
+          <th class="text-right">Grenade Kills</th>
+          <th class="text-right">Activities Cleared</th>
+          <th class="text-right">Raids Cleared</th>
+          <th class="text-right">Public Events Completed</th>
         </tr>
     </thead>
     <tbody>`;
@@ -331,17 +716,17 @@ function pveDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].username+bnetId+`</td>
-      <td class="text-center">`+rows[i].clan_no+`</td>
-      <td class="text-center">`+rows[i].kills.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].deaths.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].suicides.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].kd+`</td>
-      <td class="text-center">`+rows[i].weaponKillsSuper.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].weaponKillsMelee.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].weaponKillsGrenade.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].activitiesCleared.toLocaleString()+`</td>
-      <td class="text-center">`+rows[i].raid_count+`</td>
-      <td class="text-center">`+rows[i].publicEventsCompleted.toLocaleString()+`</td>
+      <td class="text-left">`+rows[i].clan_no+`</td>
+      <td class="text-right">`+rows[i].kills.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].deaths.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].suicides.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].kd+`</td>
+      <td class="text-right">`+rows[i].weaponKillsSuper.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsMelee.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].weaponKillsGrenade.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].activitiesCleared.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].raid_count+`</td>
+      <td class="text-right">`+rows[i].publicEventsCompleted.toLocaleString()+`</td>
     </tr>`;
   }
 
@@ -409,7 +794,7 @@ function pvpDataTable(rows) {
 
   /* Headers */
   str = `
-  <div>Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
+  <div class="text-center">Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
   <br/>
   <div class="table-responsive">
     <table id="pvp_table" class="display table table-striped">
@@ -417,15 +802,16 @@ function pvpDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-nowrap text-center">Clan</th>
-          <th class="text-nowrap text-right">KD</th>
-          <th class="text-nowrap text-right">KDA</th>
-          <th class="text-nowrap text-right">KAD</th>
-          <th class="text-nowrap text-right">Glory</th>
-          <th class="text-nowrap text-right">Valor</th>
-          <th class="text-nowrap text-right">Infamy</th>
-          <th class="text-right">Highest Game Kills</th>
-          <th class="text-right">Highest Game Score</th>
+          <th class="text-center">Clan</th>
+          <th class="text-right">KD</th>
+          <th class="text-right">KDA</th>
+          <th class="text-right">KAD</th>
+          <th class="text-right">Gold Medals</th>
+          <th class="text-right">Glory</th>
+          <th class="text-right">Valor</th>
+          <th class="text-right">Valor Resets</th>
+          <th class="text-right">Infamy</th>
+          <th class="text-right">Infamy Resets</th>
         </tr>
     </thead>
   <tbody>`;
@@ -446,15 +832,12 @@ function pvpDataTable(rows) {
       <td class="text-right">`+rows[i].kd+`</td>
       <td class="text-right">`+rows[i].kda+`</td>
       <td class="text-right">`+rows[i].kad+`</td>
+      <td class="text-right">`+rows[i].gold_medals+`</td>
       <td class="text-right" data-sort="`+rows[i].glory+`">`+rows[i].glory.toLocaleString()+`<div class="rank-`+glory_rank.split(" ").join("").toLowerCase()+`"><small>`+glory_rank+`</small></div></td>
       <td class="text-right" data-sort="`+rows[i].valor+`">`+rows[i].valor.toLocaleString()+`<div class="rank-`+valor_rank.split(" ").join("").toLowerCase()+`"><small>`+valor_rank+`</small></div></td>
+      <td class="text-right">`+rows[i].valor_resets+`</td>
       <td class="text-right" data-sort="`+rows[i].infamy+`">`+rows[i].infamy.toLocaleString()+`<div class="rank-`+infamy_rank.split(" ").join("").toLowerCase()+`"><small>`+infamy_rank+`</small></div></td>
-      <td class="text-right">
-        <a href="https://www.bungie.net/en/PGCR/`+rows[i].bestSingleGameKills_activityID+`" target="_blank">`+rows[i].bestSingleGameKills+`</a>
-      </td>
-      <td class="text-right">
-        <a href="https://www.bungie.net/en/PGCR/`+rows[i].bestSingleGameScore_activityID+`" target="_blank">`+rows[i].bestSingleGameScore+`</a>
-      </td>
+      <td class="text-right">`+rows[i].infamy_resets+`</td>
     </tr>`;
   }
 

@@ -8,3 +8,34 @@
 .table td, .table th {
   border-top: 0;
 }
+
+/* Extra small devices (portrait phones, less than 576px) */
+@media (max-width: 575.98px) {
+}
+
+/* Small devices (landscape phones, less than 768px) */
+@media (max-width: 767.98px) {
+  div.table-responsive>div.dataTables_wrapper>div.row>div[class^="col-"]:last-child  {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  div.dataTables_filter label {
+    width: 100%;
+  }
+  div.dataTables_filter input {
+    width: 100%!important;
+    display: block!important;
+    margin: 5px 0 0 0!important;
+  }
+  div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+    justify-content: center;
+  }
+}
+
+/* Medium devices (tablets, less than 992px) */
+@media (max-width: 991.98px) {
+}
+
+/* Large devices (desktops, less than 1200px) */
+@media (max-width: 1199.98px) {
+}
