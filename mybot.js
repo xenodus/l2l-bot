@@ -21,6 +21,8 @@ const eventDatetimeFormat = 'DD MMM h:mmA';
 
 let isAdmin = false;
 let isClanMember = false;
+let maxConfirmed = 6;
+let sgeServerID = '372462137651757066';
 let raids = {
   'Levi': [],
   'PLevi': [],
@@ -38,10 +40,10 @@ let raids = {
 const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
 const eventChannelName = "raid_lfg"; // no spaces all lower case
-const pvpChannelName = "pvp_lfg"; // no spaces all lower case
+//const pvpChannelName = "pvp_lfg"; // no spaces all lower case
 let channel;
 let eventChannel;
-let pvpChannel;
+//let pvpChannel;
 let serverID; // also known as guild id
 
 /******************************
@@ -81,6 +83,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
   console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
 
   serverID = reaction.message.guild.id;
+  maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
   await channelCheck(reaction.message.guild);
 
@@ -140,7 +143,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
 client.on("message", async function(message) {
 
   if ( message.author.bot ) return;
-  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name && message.channel.name != pvpChannel.name ) return;
+  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
   console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
@@ -150,6 +153,7 @@ client.on("message", async function(message) {
   isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(message.member.id) || Object.keys(config.sherpaIDs).includes(message.member.id)) ? true : false;
   isClanMember = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.roles.find(roles => roles.name === "Clan 1") || message.member.roles.find(roles => roles.name === "Clan 2")) ? true : false;
   serverID = message.guild.id;
+  maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
   await channelCheck(message.guild);
 
@@ -407,6 +411,7 @@ client.on("message", async function(message) {
         #pvp_lfg channel
   ****************************/
 
+  /*
   if( message.channel == pvpChannel ) {
     if ( command === "pvp" ) {
 
@@ -467,6 +472,7 @@ client.on("message", async function(message) {
       }
     }
   }
+  */
 
   if ( command === "food" ) {
     message.author.send( foodList() );
@@ -503,12 +509,12 @@ function isEventDatetimeValid(event_date_string) {
   return moment(event_date_string, eventDatetimeFormat).isValid();
 }
 
-function updateAllServers() {
+async function updateAllServers() {
   for( var guild of client.guilds.values() ) {
     serverID = guild.id;
     channelCheck(guild);
 
-    setTimeout(function () {
+    setTimeout(async function() {
       interestList.getInterestList();
       raidEvent.getEvents();
     }, 1000);
@@ -666,7 +672,8 @@ async function channelCheck(guild) {
     eventChannel = client.channels.get(eventChannelID);
   }
 
-  // Event Channel Check
+  // PvP Channel Check
+  /*
   let pvpChannelExists = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
   if( pvpChannelExists === null )
@@ -679,6 +686,7 @@ async function channelCheck(guild) {
     pvpChannelID = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
     pvpChannel = client.channels.get(pvpChannelID);
   }
+  */
 }
 
 /******************************
@@ -1093,7 +1101,7 @@ function Event() {
                     msg.edit( eventInfo.richEmbed )
                     .then(async function(message){
                       await message.clearReactions().then(async function(message){
-                        if( results.filter(row => row.type == "confirmed").length < 6 )
+                        if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
                           await message.react('🆗');
                         await message.react('🤔');
                         await message.react('⛔');
@@ -1173,7 +1181,7 @@ function Event() {
 
               await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
 
-              if( eventInfo.confirmedCount <= 6 )
+              if( eventInfo.confirmedCount <= maxConfirmed )
                 await message.react('🆗');
               await message.react('🤔');
               await message.react('⛔');
@@ -1291,7 +1299,7 @@ function Event() {
 
           console.log( timestampPrefix() + 'Message ID: ' + message.id );
 
-            if( results.filter(row => row.type == "confirmed").length < 6 )
+            if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
               await message.react('🆗');
             await message.react('🤔');
             await message.react('⛔');
@@ -1400,7 +1408,7 @@ function Event() {
             .then(async function(message){
               await message.clearReactions().then(async function(message){
                 await message.edit( eventInfo.richEmbed ).then(async function(message){
-                  if( results.filter(row => row.type == "confirmed").length < 6 )
+                  if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
                     await message.react('🆗');
                   await message.react('🤔');
                   await message.react('⛔');
@@ -1447,7 +1455,7 @@ function Event() {
       .setColor( color )
       .setDescription( event.event_description );
 
-    richEmbed.addField("Confirmed" + (confirmedCount-1==6?" [Full]":""), confirmed, true);
+    richEmbed.addField("Confirmed" + (confirmedCount-1==maxConfirmed?" [Full]":""), confirmed, true);
     richEmbed.addField("Reserve", reserve, true);
 
 

@@ -55,7 +55,7 @@
   font-size: 100%;
   font-weight: 700;
   line-height: normal;
-  font-family: 'Comfortaa', sans-serif;
+  /* font-family: 'Comfortaa', sans-serif; */
 }
 .badge:before, .badge:after {
   position: absolute;

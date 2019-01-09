@@ -14,9 +14,7 @@ const clanIDs = ['2754160', '2835157'];
 const membershipType = 4;
 const glory_hash = 2000925172; // competitive
 const valor_hash = 3882308435; // quickplay
-const infamy_hash = 2772425241; // gambit
 const valor_reset_hash = 115001349;
-const infamy_reset_hash = 3901785488;
 const gold_medals_hash = [4230088036, 1371679603, 3882642308, 1413337742, 2857093873, 1271667367, 3324094091];
 
 // Get Clan
@@ -53,12 +51,9 @@ getClanMembers(clanIDs)
 						kda: member.stats.kda,
 						valor: member.stats.valor,
 						glory: member.stats.glory,
-						infamy: member.stats.infamy,
 						valor_step: member.stats.valor_step,
 						glory_step: member.stats.glory_step,
-						infamy_step: member.stats.infamy_step,
             valor_resets: member.stats.valor_resets,
-            infamy_resets: member.stats.infamy_resets,
 						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
 					})
 				}
@@ -136,12 +131,9 @@ async function getClanMembers(clanIDs) {
 								'kda': 0,
 								'glory': 0,
 								'valor': 0,
-								'infamy': 0,
 								'glory_step': 0,
 								'valor_step': 0,
-								'infamy_step': 0,
-                'valor_resets': 0,
-                'infamy_resets': 0
+                'valor_resets': 0
 							}
 						});
 
@@ -174,7 +166,6 @@ async function getPVPStats(clanMembersInfo) {
         let characterID = Object.keys(r.Response.characterProgressions.data).shift();
         let triumpPoints = r.Response.profileRecords.data.score;
         let valorResets = r.Response.profileRecords.data.records[valor_reset_hash].objectives[0].progress ? r.Response.profileRecords.data.records[valor_reset_hash].objectives[0].progress : 0;
-        let infamyResets = r.Response.profileRecords.data.records[infamy_reset_hash].objectives[0].progress ? r.Response.profileRecords.data.records[infamy_reset_hash].objectives[0].progress : 0;
         let goldMedals = 0;
 
         for( var index in gold_medals_hash ) {
@@ -199,13 +190,10 @@ async function getPVPStats(clanMembersInfo) {
         clanMembersInfo[i].stats.gold_medals = goldMedals;
         clanMembersInfo[i].stats.triumph = triumpPoints;
         clanMembersInfo[i].stats.valor_resets = valorResets;
-        clanMembersInfo[i].stats.infamy_resets = infamyResets;
 
-        clanMembersInfo[i].stats.infamy = r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
         clanMembersInfo[i].stats.valor = r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
         clanMembersInfo[i].stats.glory = r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
 
-        clanMembersInfo[i].stats.infamy_step = r.Response.characterProgressions.data[characterID].progressions[infamy_hash].level ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].level : 0;
         clanMembersInfo[i].stats.valor_step = r.Response.characterProgressions.data[characterID].progressions[valor_hash].level ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].level : 0;
         clanMembersInfo[i].stats.glory_step = r.Response.characterProgressions.data[characterID].progressions[glory_hash].level ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].level : 0;
 

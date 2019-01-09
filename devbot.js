@@ -9,18 +9,13 @@ const Discord = require("discord.js");
 const client = new Discord.Client();
 const raidEvent = new Event();
 const interestList = new InterestList();
-const pvpList = new PVPList();
-const axios = require('axios');
-const Traveler = require('the-traveler').default;
-const traveler = new Traveler({
-  apikey: config.bungieAPIKey,
-  userAgent: 'alvinyeoh', //used to identify your request to the API
-  debug: false
-});
 const eventDatetimeFormat = 'DD MMM h:mmA';
 
 let isAdmin = false;
 let isClanMember = false;
+let maxConfirmed = 6;
+let sgeServerID = '372462137651757066';
+let happyMealServerID = '480757578612342784';
 let raids = {
   'Levi': [],
   'PLevi': [],
@@ -38,10 +33,10 @@ let raids = {
 const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
 const eventChannelName = "raid_lfg"; // no spaces all lower case
-const pvpChannelName = "pvp_lfg"; // no spaces all lower case
+//const pvpChannelName = "pvp_lfg"; // no spaces all lower case
 let channel;
 let eventChannel;
-let pvpChannel;
+//let pvpChannel;
 let serverID; // also known as guild id
 
 /******************************
@@ -81,6 +76,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
   console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
 
   serverID = reaction.message.guild.id;
+  maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
   await channelCheck(reaction.message.guild);
 
@@ -140,7 +136,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
 client.on("message", async function(message) {
 
   if ( message.author.bot ) return;
-  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name && message.channel.name != pvpChannel.name ) return;
+  if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
   console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
@@ -150,6 +146,7 @@ client.on("message", async function(message) {
   isAdmin = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(message.member.id) || Object.keys(config.sherpaIDs).includes(message.member.id)) ? true : false;
   isClanMember = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.roles.find(roles => roles.name === "Clan 1") || message.member.roles.find(roles => roles.name === "Clan 2")) ? true : false;
   serverID = message.guild.id;
+  maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
   await channelCheck(message.guild);
 
@@ -300,7 +297,7 @@ client.on("message", async function(message) {
 
     else if ( command === "clear" || command === "refresh" ) {
       if ( isAdmin ) {
-        raidEvent.getEvents();
+        raidEvent.getEvents(eventChannel);
       }
     }
   }
@@ -398,72 +395,7 @@ client.on("message", async function(message) {
 
     else if ( command === "show" || command === "clear" || command === "refresh" ) {
       if ( isAdmin ) {
-        interestList.getInterestList(message);
-      }
-    }
-  }
-
-  /****************************
-        #pvp_lfg channel
-  ****************************/
-
-  if( message.channel == pvpChannel ) {
-    if ( command === "pvp" ) {
-
-      switch ( args[0] ) {
-        case "sub":
-          if( args.length > 1 && message.mentions.users.first() ) {
-            let player = message.mentions.users.first();
-
-            message.guild.fetchMember(player).then(function(member){
-              pvpList.sub(member);
-            });
-          }
-          else
-            pvpList.sub(message.member);
-
-          pvpList.displayList().then(function(){
-            message.delete();
-          });
-          return;
-
-        case "unsub":
-          if( args.length > 1 && message.mentions.users.first() ) {
-            let player = message.mentions.users.first();
-
-            message.guild.fetchMember(player).then(function(member){
-              pvpList.unsub(member);
-            })
-          }
-          else
-            pvpList.unsub(message.member);
-
-          pvpList.displayList().then(function(){
-            message.delete();
-          });
-          return;
-
-        case "ping":
-          if( args.length > 1 ) {
-            let msg = args[1] ? args.slice(1, args.length).join(" ") : "";
-            pvpList.pingList(msg, message.member);
-          }
-
-          message.delete();
-          return;
-
-        case "detailed":
-          pvpList.displayList("detailed").then(function(){
-            message.delete();
-          });
-          return;
-
-        case "list":
-        default:
-          pvpList.displayList().then(function(){
-            message.delete();
-          });
-          return;
+        interestList.getInterestList(channel);
       }
     }
   }
@@ -503,15 +435,14 @@ function isEventDatetimeValid(event_date_string) {
   return moment(event_date_string, eventDatetimeFormat).isValid();
 }
 
-function updateAllServers() {
+async function updateAllServers() {
   for( var guild of client.guilds.values() ) {
     serverID = guild.id;
-    channelCheck(guild);
 
-    setTimeout(function () {
-      interestList.getInterestList();
-      raidEvent.getEvents();
-    }, 1000);
+    await channelCheck(guild).then(async function(channels){
+      await interestList.getInterestList(channels.channel);
+      await raidEvent.getEvents(channels.eventChannel);
+    });
   }
 }
 
@@ -666,18 +597,9 @@ async function channelCheck(guild) {
     eventChannel = client.channels.get(eventChannelID);
   }
 
-  // Event Channel Check
-  let pvpChannelExists = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
-
-  if( pvpChannelExists === null )
-    await guild.createChannel(pvpChannelName, "text").then(async function(newChannel){
-      newChannel.setParent( channelCategoryID );
-      pvpChannelID = newChannel.id;
-      pvpChannel = await client.channels.get(pvpChannelID);
-    });
-  else {
-    pvpChannelID = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
-    pvpChannel = client.channels.get(pvpChannelID);
+  return {
+    channel: channel,
+    eventChannel: eventChannel
   }
 }
 
@@ -685,224 +607,10 @@ async function channelCheck(guild) {
           Objects
 *******************************/
 
-function PVPList() {
-  var self = this;
-
-  self.sub = async function(player, comment='') {
-    let username = player.nickname ? player.nickname : player.user.username;
-
-    await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
-    .then(async function(r){
-      await pool.query("INSERT INTO pvp_interest_list SET ?", {server_id: serverID, username: username, user_id: player.id, date_added: moment().format('YYYY-MM-DD')})
-      .then(function(r){
-        console.log( timestampPrefix() + username + " subbed for PVP List" );
-      });
-    });
-  }
-
-  self.unsub = async function(player, comment='') {
-    let username = player.nickname ? player.nickname : player.user.username;
-    let user_id = player.id;
-
-    await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id]).then(function(r){
-      console.log( timestampPrefix() + username + " unsubbed from PVP List" );
-    });
-  }
-
-  self.displayList = async function(type='simple') {
-    await self.clearBotMessages(pvpChannel).then(function(){
-      pvpChannel.startTyping();
-      self.getList(type).then(function(){
-        pvpChannel.stopTyping();
-      });
-    })
-  }
-
-  self.clearBotMessages = async function(channel) {
-    let c = channel;
-
-    await channel.fetchMessages({limit: 99}).then(function(messages){
-      messages = messages.filter(m => { return m.author.bot == true && (m.embeds.length == 0 || m.embeds[0].author.name.includes('PvP Interest List')) });
-      c.bulkDelete(messages);
-    })
-    .catch(function(e){
-      console.log(e);
-    });
-  }
-
-  self.getList = async function(type="simple") {
-    await pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID]).then(async function(results){
-      var rows = JSON.parse(JSON.stringify(results));
-
-      if( rows.length > 0 ) {
-
-        if(type==='simple') {
-
-          let playersName = '';
-
-          for ( var i=0; i<rows.length; i++ ) {
-            let username = rows[i].username;
-            playersName += "• `" + username+"`\n";
-          }
-
-          var richEmbed = new Discord.RichEmbed()
-            .setColor("#DC143C")
-            .setAuthor("PvP Interest List (Simple)", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
-            .setDescription(playersName)
-            .setTimestamp();
-
-          richEmbed.addField("\u200b\nCommands", "`Show list - !pvp or !pvp detailed\nSub - !pvp sub or !pvp sub @user to sub someone\nUnsub - !pvp unsub or !pvp unsub @user to unsub someone\nPing list - !pvp ping your message here`");
-          console.log( timestampPrefix() + "Displaying Detailed PVP List" );
-          await pvpChannel.send(richEmbed);
-        }
-        else {
-          await self.getPVPStats(rows).then(async function(data){
-            var richEmbed = new Discord.RichEmbed()
-              .setColor("#DC143C")
-              .setAuthor("PvP Interest List (Detailed)", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
-              .setTimestamp();
-
-            let playersName = '';
-            let playersGlory = '';
-            let playersStat = '';
-
-            if( data.length > 0 ) {
-              for( var i=0;i<data.length;i++ ) {
-                let description = '';
-                description += data[i].glory !== '' ? '**Glory:** ' + data[i].glory+'\n' : '';
-                description += (data[i].kd !== '' && data[i].kad !== '') ? '**KD:** ' + data[i].kd +' **KAD:** ' + data[i].kad + '\n' : '';
-                description += description === '' ? 'n/a' : '';
-
-                richEmbed.addField(data[i].username, description, true);
-
-                // Fill empty columns
-                if( i+1 == data.length ) {
-                  let emptyColumn = 3 - (data.length % 3);
-                  if( emptyColumn > 0 ) {
-                    while( emptyColumn != 0 ) {
-                      richEmbed.addField("\u200b", "\u200b", true);
-                      emptyColumn--;
-                    }
-                  }
-                }
-
-                playersName += data[i].username + '\n';
-                playersGlory += data[i].glory !== '' ? 'Glory: ' + data[i].glory+'\n' : '-\n';
-                playersStat += (data[i].kd === '' || data[i].kd === '') ? '-\n' : data[i].kd + ' / ' + data[i].kad + '\n';
-              }
-            }
-
-            richEmbed.addField("\u200b\nCommands", "`Show list - !pvp or !pvp detailed\nSub - !pvp sub or !pvp sub @user to sub someone\nUnsub - !pvp unsub or !pvp unsub @user to unsub someone\nPing list - !pvp ping your message here`");
-            console.log( timestampPrefix() + "Displaying Detailed PVP List" );
-            await pvpChannel.send(richEmbed);
-          });
-        }
-      }
-      else {
-        await pvpChannel.send("Nobody is on the PVP interest list :slight_frown:");
-      }
-    })
-    .catch(function(e){
-      console.log(e);
-    });
-    return;
-  }
-
-  self.getPVPStats = async function(rows) {
-    const glory_hash = 2000925172; // competitive
-    const valor_hash = 3882308435; // quickplay
-    const infamy_hash = 2772425241; // gambit
-    const membershipType = 4;
-
-    let data = [];
-
-    for ( var i=0; i<rows.length; i++ ) {
-      let username = rows[i].username;
-      let userID = rows[i].user_id;
-      let vPt = '';
-      let gPt = '';
-      let iPt = '';
-      let kad = '';
-      let kda = '';
-      let kd = '';
-      let lastLogin = '';
-
-      await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username)).then(async function(response){
-
-        if( response.Response[0] && response.Response[0].membershipId ) {
-          let membershipId = response.Response[0].membershipId;
-
-          await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']}).then(async function(r){
-            if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
-              let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
-
-              await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
-              .then(async function(res){
-                if( res.status == 200 ) {
-                  kad = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue;
-                  kda = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue;
-                  kd = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue;
-                }
-              })
-              .catch(function(e){
-                console.log(e);
-              });
-
-              iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
-              vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
-              gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
-              lastLogin = r.Response.profile.data.dateLastPlayed;
-              lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '';
-            }
-          });
-        }
-      });
-
-      data.push({
-        username: username,
-        kda: kda,
-        kad: kad,
-        kd: kd,
-        glory: gPt,
-        valor: vPt,
-        infamy: iPt,
-        lastLogin: lastLogin
-      });
-    }
-
-    return data;
-  }
-
-  self.pingList = function(msg, creator) {
-    pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID]).then(function(results){
-      let playerIDs = '';
-      var rows = JSON.parse(JSON.stringify(results));
-
-      if( rows.length > 0 ) {
-        for(var i=0;i<rows.length;i++) {
-          playerIDs += "<@!"+rows[i].user_id+"> ";
-        }
-
-        let creator_name = creator.nickname ? creator.nickname : creator.user.username;
-
-        var richEmbed = new Discord.RichEmbed()
-          .setColor("#DC143C")
-          .setAuthor(creator_name, creator.user.avatarURL)
-          .setDescription(msg)
-          .setTimestamp();
-
-        richEmbed.addField(":wave:", playerIDs);
-
-        pvpChannel.send(richEmbed);
-      }
-    });
-  }
-}
-
 function InterestList() {
   var self = this;
 
-  self.getInterestList = function() {
+  self.getInterestList = async function(channel) {
 
     raids = {
       'Levi': [],
@@ -914,7 +622,7 @@ function InterestList() {
       'Scourge': [],
     };
 
-    pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [serverID])
+    await pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [serverID])
     .then(function(results){
 
       var rows = JSON.parse(JSON.stringify(results));
@@ -1010,7 +718,7 @@ function InterestList() {
             richEmbed.setURL(config.raidGuides[raid]);
 
           if( message_id == '' ) {
-            self.getInterestList();
+            self.getInterestList(channel);
           }
           else {
             channel.fetchMessage(message_id).then(function(message){
@@ -1093,7 +801,7 @@ function Event() {
                     msg.edit( eventInfo.richEmbed )
                     .then(async function(message){
                       await message.clearReactions().then(async function(message){
-                        if( results.filter(row => row.type == "confirmed").length < 6 )
+                        if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
                           await message.react('🆗');
                         await message.react('🤔');
                         await message.react('⛔');
@@ -1173,7 +881,7 @@ function Event() {
 
               await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
 
-              if( eventInfo.confirmedCount <= 6 )
+              if( eventInfo.confirmedCount <= maxConfirmed )
                 await message.react('🆗');
               await message.react('🤔');
               await message.react('⛔');
@@ -1254,7 +962,7 @@ function Event() {
         Get & Refresh Event
   *******************************/
 
-  self.getEvents = function() {
+  self.getEvents = async function(eventChannel) {
 
     clear(eventChannel);
 
@@ -1291,7 +999,7 @@ function Event() {
 
           console.log( timestampPrefix() + 'Message ID: ' + message.id );
 
-            if( results.filter(row => row.type == "confirmed").length < 6 )
+            if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
               await message.react('🆗');
             await message.react('🤔');
             await message.react('⛔');
@@ -1400,7 +1108,7 @@ function Event() {
             .then(async function(message){
               await message.clearReactions().then(async function(message){
                 await message.edit( eventInfo.richEmbed ).then(async function(message){
-                  if( results.filter(row => row.type == "confirmed").length < 6 )
+                  if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
                     await message.react('🆗');
                   await message.react('🤔');
                   await message.react('⛔');
@@ -1447,7 +1155,7 @@ function Event() {
       .setColor( color )
       .setDescription( event.event_description );
 
-    richEmbed.addField("Confirmed" + (confirmedCount-1==6?" [Full]":""), confirmed, true);
+    richEmbed.addField("Confirmed" + (confirmedCount-1==maxConfirmed?" [Full]":""), confirmed, true);
     richEmbed.addField("Reserve", reserve, true);
 
 

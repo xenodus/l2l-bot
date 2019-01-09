@@ -45,7 +45,7 @@ function badges(data) {
 
   data = JSON.parse(data);
 
-  if( data.pve.length <= 0 && data.pvp.length <= 0 && data.weapon.length <= 0 ) {
+  if( data.pve.length <= 0 && data.pvp.length <= 0 && data.weapon.length <= 0 && data.gambit.length <= 0 ) {
     return '';
   }
 
@@ -116,12 +116,14 @@ function badges(data) {
       return current.valor_resets > prev.valor_resets ? current : prev;
     });
 
-    highest_infamy_resets_count = data.pvp.reduce(function(prev, current){
-      return current.infamy_resets > prev.infamy_resets ? current : prev;
-    });
-
     highest_triumph_count = data.pvp.reduce(function(prev, current){
       return current.triumph > prev.triumph ? current : prev;
+    });
+  }
+
+  if( data.gambit.length > 0 ) {
+    highest_infamy_resets_count = data.gambit.reduce(function(prev, current){
+      return current.infamy_resets > prev.infamy_resets ? current : prev;
     });
   }
 
@@ -309,14 +311,6 @@ function badges(data) {
         count: highest_valor_resets_count.valor_resets.toLocaleString(),
         color: 'red',
         icon: 'ra ra-nails'
-      },
-      'highest_infamy_resets_count' : {
-        badgeName: 'Poker Face',
-        userId: highest_infamy_resets_count.bnet_id,
-        title: 'Infamy Resets:',
-        count: highest_infamy_resets_count.infamy_resets.toLocaleString(),
-        color: 'teal',
-        icon: 'ra ra-spades-card'
       },
       'highest_triumph_count' : {
         badgeName: 'OCD',
@@ -717,13 +711,13 @@ function pveDataTable(rows) {
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].username+bnetId+`</td>
       <td class="text-left">`+rows[i].clan_no+`</td>
-      <td class="text-right">`+rows[i].kills.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].deaths.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].suicides.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].kills.toLocaleString()+`</td>
+      <td class="text-right text-danger">`+rows[i].deaths.toLocaleString()+`</td>
+      <td class="text-right text-danger">`+rows[i].suicides.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].killsDeathsRatio+`</td>
-      <td class="text-right">`+rows[i].weaponKillsSuper.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].weaponKillsMelee.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].weaponKillsGrenade.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].weaponKillsSuper.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].weaponKillsMelee.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].weaponKillsGrenade.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].activitiesCleared.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].raid_count+`</td>
       <td class="text-right">`+rows[i].publicEventsCompleted.toLocaleString()+`</td>
@@ -796,7 +790,7 @@ function gambitDataTable(rows) {
           <th class="text-left">Name / Battle.net ID</th>
           <th class="text-center">Clan</th>
           <th class="text-right">Infamy</th>
-          <th class="text-right">Infamy Resets</th>
+          <th class="text-right">Resets</th>
           <th class="text-right">Kills</th>
           <th class="text-right">Deaths</th>
           <th class="text-right">Suicides</th>
@@ -827,19 +821,19 @@ function gambitDataTable(rows) {
       <td class="text-center">`+rows[i].clan_no+`</td>
       <td class="text-right" data-sort="`+rows[i].infamy+`">`+rows[i].infamy.toLocaleString()+`<div class="rank-`+infamy_rank.split(" ").join("").toLowerCase()+`"><small>`+infamy_rank+`</small></div></td>
       <td class="text-right">`+rows[i].infamy_resets+`</td>
-      <td class="text-right">`+rows[i].kills.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].deaths.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].suicides.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].kills.toLocaleString()+`</td>
+      <td class="text-right text-danger">`+rows[i].deaths.toLocaleString()+`</td>
+      <td class="text-right text-danger">`+rows[i].suicides.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].killsDeathsRatio.toLocaleString()+`</td>
       <!--td class="text-right">`+rows[i].efficiency.toLocaleString()+`</td-->
-      <td class="text-right">`+rows[i].invasionKills.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].invaderKills.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].invaderDeaths.toLocaleString()+`</td>
-      <td class="text-right">`+parseInt(rows[i].primevalHealing).toLocaleString()+`%</td>
-      <td class="text-right" data-sort="`+rows[i].primevalDamage+`">`+self.formatNumber(rows[i].primevalDamage)+`</td>
-      <td class="text-right">`+rows[i].motesDeposited.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].motesLost.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].motesDenied.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].invasionKills.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].invaderKills.toLocaleString()+`</td>
+      <td class="text-right text-danger">`+rows[i].invaderDeaths.toLocaleString()+`</td>
+      <td class="text-right text-success">`+parseInt(rows[i].primevalHealing).toLocaleString()+`%</td>
+      <td class="text-right text-success" data-sort="`+rows[i].primevalDamage+`">`+self.formatNumber(rows[i].primevalDamage)+`</td>
+      <td class="text-right text-success">`+rows[i].motesDeposited.toLocaleString()+`</td>
+      <td class="text-right text-danger">`+rows[i].motesLost.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].motesDenied.toLocaleString()+`</td>
     </tr>`;
   }
 
@@ -922,7 +916,7 @@ function pvpDataTable(rows) {
           <th class="text-right">Gold Medals</th>
           <th class="text-right">Glory</th>
           <th class="text-right">Valor</th>
-          <th class="text-right">Valor Resets</th>
+          <th class="text-right">Resets</th>
         </tr>
     </thead>
   <tbody>`;
