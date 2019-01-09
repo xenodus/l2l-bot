@@ -23,7 +23,7 @@ router.get('/sitemap.xml', function(req, res, next) {
 });
 
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'SG-Elite: A Destiny 2 Clan from Singapore' });
+  res.render('index', { title: 'SG-Elites: A Destiny 2 Clan from Singapore' });
 });
 
 router.get('/events', async function(req, res, next) {
@@ -57,6 +57,7 @@ router.get('/roster', async function(req, res, next) {
 router.get('/leaderboards', async function(req, res, next) {
   let raid_results = await pool.query("SELECT * FROM clan_raid_report");
   let pvp_results = await pool.query("SELECT * FROM clan_pvp_stats");
+  let gambit_results = await pool.query("SELECT * FROM clan_gambit_stats");
   let pve_results = await pool.query("SELECT clan_pve_stats.*, (levi + levip + eow + eowp + sos + sosp + lw + sotp) as raid_count FROM `clan_pve_stats` JOIN clan_raid_report ON clan_pve_stats.user_id = clan_raid_report.user_id");
   let weapon_results = await pool.query("SELECT * FROM clan_weapon_stats");
   let triumph_results = await pool.query("SELECT username, bnet_id, clan_no, triumph, last_updated FROM clan_pvp_stats");
@@ -65,6 +66,7 @@ router.get('/leaderboards', async function(req, res, next) {
     raid: raid_results,
     pvp: pvp_results,
     pve: pve_results,
+    gambit: gambit_results,
     weapon: weapon_results,
     triumph: triumph_results
   };

@@ -59,10 +59,6 @@ getClanMembers(clanIDs)
 						infamy_step: member.stats.infamy_step,
             valor_resets: member.stats.valor_resets,
             infamy_resets: member.stats.infamy_resets,
-						//bestSingleGameKills: member.stats.bestSingleGameKills,
-						//bestSingleGameKills_activityID: member.stats.bestSingleGameKills_activityID,
-						//bestSingleGameScore: member.stats.bestSingleGameScore,
-						//bestSingleGameScore_activityID: member.stats.bestSingleGameScore_activityID,
 						last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
 					})
 				}
@@ -138,10 +134,6 @@ async function getClanMembers(clanIDs) {
 								'kd': 0,
 								'kad': 0,
 								'kda': 0,
-								//'bestSingleGameKills': 0,
-								//'bestSingleGameKills_activityID': 0,
-								//'bestSingleGameScore': 0,
-								//'bestSingleGameScore_activityID': 0,
 								'glory': 0,
 								'valor': 0,
 								'infamy': 0,
@@ -197,11 +189,6 @@ async function getPVPStats(clanMembersInfo) {
             clanMembersInfo[i].stats.kad = res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue : 0;
             clanMembersInfo[i].stats.kda = res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue : 0;
             clanMembersInfo[i].stats.kd = res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue : 0;
-
-            //clanMembersInfo[i].stats.bestSingleGameScore = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue : 0;
-            //clanMembersInfo[i].stats.bestSingleGameScore_activityID = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId : 0;
-            //clanMembersInfo[i].stats.bestSingleGameKills = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameKills.basic.displayValue : 0;
-            //clanMembersInfo[i].stats.bestSingleGameKills_activityID = res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameScore.activityId ? res.data.Response.mergedAllCharacters.results.allPvP.allTime.bestSingleGameKills.activityId : 0;
           }
         })
         .catch(function(e){

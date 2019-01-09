@@ -8,7 +8,7 @@ block header
   link(rel='stylesheet', href='https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css')
   link(rel='stylesheet', href='https://cdn.datatables.net/fixedheader/3.1.5/css/fixedHeader.bootstrap4.min.css')
 
-  script(src="/javascripts/leaderboard.js?79")
+  script(src="/javascripts/leaderboard.js?90")
 block content
   .row
     .col-md-12.pt-4.pb-4
@@ -20,7 +20,9 @@ block content
         li.nav-item
           a.nav-link#pills-pve-tab(data-toggle="pill", href="#pills-pve", role="tab" aria-controls="pills-pve" aria-selected="true").text-white PvE
         li.nav-item
-          a.nav-link#pills-pvp-tab(data-toggle="pill", href="#pills-pvp", role="tab" aria-controls="pills-pvp" aria-selected="true").text-white PvP
+          a.nav-link#pills-crucible-tab(data-toggle="pill", href="#pills-crucible", role="tab" aria-controls="pills-crucible" aria-selected="true").text-white Crucible
+        li.nav-item
+          a.nav-link#pills-gambit-tab(data-toggle="pill", href="#pills-gambit", role="tab" aria-controls="pills-gambit" aria-selected="true").text-white Gambit
         li.nav-item
           a.nav-link#pills-weapon-tab(data-toggle="pill", href="#pills-weapon", role="tab" aria-controls="pills-weapon" aria-selected="true").text-white Weapons Kills
         li.nav-item
@@ -39,9 +41,13 @@ block content
           h2.text-center PvE Stats
           #pve-container.mb-5
 
-        .tab-pane.fade#pills-pvp(role="tabpanel", aria-labelledby="pills-pvp-tab")
-          h2.text-center PvP Stats
+        .tab-pane.fade#pills-crucible(role="tabpanel", aria-labelledby="pills-crucible-tab")
+          h2.text-center Crucible Stats
           #pvp-container.mb-5
+
+        .tab-pane.fade#pills-gambit(role="tabpanel", aria-labelledby="pills-gambit-tab")
+          h2.text-center Gambit Stats
+          #gambit-container.mb-5
 
         .tab-pane.fade#pills-weapon(role="tabpanel", aria-labelledby="pills-weapon-tab")
           h2.text-center Weapon Kills
@@ -163,6 +169,27 @@ block footer
 
       triumph_table.on( 'order.dt search.dt', function () {
           triumph_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+              cell.innerHTML = i+1;
+          } );
+      } ).draw();
+
+      // Gambit
+      $("#gambit-container").html( gambitDataTable(data) );
+      $("#gambit_table").addClass("bg-white text-dark");
+      let gambit_table = $("#gambit_table").DataTable({
+        paging: true,
+        pageLength: 50,
+        fixedHeader: false,
+        "columnDefs": [ {
+            "searchable": false,
+            "orderable": false,
+            "targets": 0
+        } ],
+        "order": [[ 1, 'asc' ]]
+      });
+
+      gambit_table.on( 'order.dt search.dt', function () {
+          gambit_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
               cell.innerHTML = i+1;
           } );
       } ).draw();

@@ -268,7 +268,7 @@ function badges(data) {
         badgeName: 'KD Maestro',
         userId: highest_kd_count.bnet_id,
         title: 'PvE Kill-Death Ratio:',
-        count: highest_kd_count.kd.toLocaleString(),
+        count: highest_kd_count.killsDeathsRatio.toLocaleString(),
         color: 'blue-dark',
         icon: 'fas fa-balance-scale'
       },
@@ -720,13 +720,126 @@ function pveDataTable(rows) {
       <td class="text-right">`+rows[i].kills.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].deaths.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].suicides.toLocaleString()+`</td>
-      <td class="text-right">`+rows[i].kd+`</td>
+      <td class="text-right">`+rows[i].killsDeathsRatio+`</td>
       <td class="text-right">`+rows[i].weaponKillsSuper.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].weaponKillsMelee.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].weaponKillsGrenade.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].activitiesCleared.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].raid_count+`</td>
       <td class="text-right">`+rows[i].publicEventsCompleted.toLocaleString()+`</td>
+    </tr>`;
+  }
+
+  str += `
+      </tbody>
+    </table>
+  </div>`;
+
+  return str;
+}
+
+function gambitDataTable(rows) {
+
+  rows = JSON.parse(rows).gambit;
+
+  if( rows.length <= 0 )
+    return '';
+
+  var self = this;
+
+  self.formatNumber = function(n) {
+    const ranges = [
+      { divider: 1e18 , suffix: 'E' },
+      { divider: 1e15 , suffix: 'P' },
+      { divider: 1e12 , suffix: 'T' },
+      { divider: 1e9 , suffix: 'G' },
+      { divider: 1e6 , suffix: 'M' },
+      { divider: 1e3 , suffix: 'k' }
+    ];
+
+    for (var i = 0; i < ranges.length; i++) {
+      if (n >= ranges[i].divider) {
+        return parseFloat((n / ranges[i].divider)).toFixed(2) + ranges[i].suffix;
+      }
+    }
+    return n.toString();
+  }
+
+  let infamyRanks = [
+    'Guardian I',
+    'Guardian II',
+    'Guardian III',
+    'Brave I',
+    'Brave II',
+    'Brave III',
+    'Heroic I',
+    'Heroic II',
+    'Heroic III',
+    'Fabled I',
+    'Fabled II',
+    'Fabled III',
+    'Mythic I',
+    'Mythic II',
+    'Mythic III',
+    'Legend',
+  ];
+
+  /* Headers */
+  str = `
+  <div class="text-center">Last updated: `+moment(rows[0].last_updated).format("D MMM YYYY h:mm A")+`</div>
+  <br/>
+  <div class="table-responsive">
+    <table id="gambit_table" class="display table table-striped">
+      <thead>
+        <tr>
+          <th class="no-sort"></th>
+          <th class="text-left">Name / Battle.net ID</th>
+          <th class="text-center">Clan</th>
+          <th class="text-right">Infamy</th>
+          <th class="text-right">Infamy Resets</th>
+          <th class="text-right">Kills</th>
+          <th class="text-right">Deaths</th>
+          <th class="text-right">Suicides</th>
+          <th class="text-right">KD</th>
+          <!--th class="text-right">Efficiency (KAD)</th-->
+          <th class="text-right">Invasion Kills</th>
+          <th class="text-right">Invaders Killed</th>
+          <th class="text-right">Deaths via Invaders</th>
+          <th class="text-right">Primeval Healing</th>
+          <th class="text-right">Primeval Damage</th>
+          <th class="text-right">Motes Banked</th>
+          <th class="text-right">Motes Lost</th>
+          <th class="text-right">Motes Denied</th>
+        </tr>
+    </thead>
+  <tbody>`;
+
+  /* Data */
+  for(var i=0; i<rows.length; i++) {
+
+    bnetId = rows[i].bnet_id ? `<br/><small class="bnet_id">`+rows[i].bnet_id+`</small>`:``;
+    infamy_rank = rows[i].infamy_step == infamyRanks.length ? infamyRanks[infamyRanks.length-1] : infamyRanks[ rows[i].infamy_step ];
+
+    str += `
+    <tr>
+      <td>`+(i+1)+`</td>
+      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-center">`+rows[i].clan_no+`</td>
+      <td class="text-right" data-sort="`+rows[i].infamy+`">`+rows[i].infamy.toLocaleString()+`<div class="rank-`+infamy_rank.split(" ").join("").toLowerCase()+`"><small>`+infamy_rank+`</small></div></td>
+      <td class="text-right">`+rows[i].infamy_resets+`</td>
+      <td class="text-right">`+rows[i].kills.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].deaths.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].suicides.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].killsDeathsRatio.toLocaleString()+`</td>
+      <!--td class="text-right">`+rows[i].efficiency.toLocaleString()+`</td-->
+      <td class="text-right">`+rows[i].invasionKills.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].invaderKills.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].invaderDeaths.toLocaleString()+`</td>
+      <td class="text-right">`+parseInt(rows[i].primevalHealing).toLocaleString()+`%</td>
+      <td class="text-right" data-sort="`+rows[i].primevalDamage+`">`+self.formatNumber(rows[i].primevalDamage)+`</td>
+      <td class="text-right">`+rows[i].motesDeposited.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].motesLost.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].motesDenied.toLocaleString()+`</td>
     </tr>`;
   }
 
@@ -810,8 +923,6 @@ function pvpDataTable(rows) {
           <th class="text-right">Glory</th>
           <th class="text-right">Valor</th>
           <th class="text-right">Valor Resets</th>
-          <th class="text-right">Infamy</th>
-          <th class="text-right">Infamy Resets</th>
         </tr>
     </thead>
   <tbody>`;
@@ -836,8 +947,6 @@ function pvpDataTable(rows) {
       <td class="text-right" data-sort="`+rows[i].glory+`">`+rows[i].glory.toLocaleString()+`<div class="rank-`+glory_rank.split(" ").join("").toLowerCase()+`"><small>`+glory_rank+`</small></div></td>
       <td class="text-right" data-sort="`+rows[i].valor+`">`+rows[i].valor.toLocaleString()+`<div class="rank-`+valor_rank.split(" ").join("").toLowerCase()+`"><small>`+valor_rank+`</small></div></td>
       <td class="text-right">`+rows[i].valor_resets+`</td>
-      <td class="text-right" data-sort="`+rows[i].infamy+`">`+rows[i].infamy.toLocaleString()+`<div class="rank-`+infamy_rank.split(" ").join("").toLowerCase()+`"><small>`+infamy_rank+`</small></div></td>
-      <td class="text-right">`+rows[i].infamy_resets+`</td>
     </tr>`;
   }
 
