@@ -33,10 +33,8 @@ let raids = {
 const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
 const eventChannelName = "raid_lfg"; // no spaces all lower case
-//const pvpChannelName = "pvp_lfg"; // no spaces all lower case
 let channel;
 let eventChannel;
-//let pvpChannel;
 let serverID; // also known as guild id
 
 /******************************
@@ -73,6 +71,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
   if ( reaction.message.guild === null ) return; // Disallow DM
   if ( user.bot ) return;
 
+  console.log( timestampPrefix() + "Server ID: " + serverID );
   console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
 
   serverID = reaction.message.guild.id;
@@ -139,6 +138,7 @@ client.on("message", async function(message) {
   if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
+  console.log( timestampPrefix() + "Server ID: " + serverID );
   console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
 
   message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
@@ -440,8 +440,10 @@ async function updateAllServers() {
     serverID = guild.id;
 
     await channelCheck(guild).then(async function(channels){
-      await interestList.getInterestList(channels.channel);
-      await raidEvent.getEvents(channels.eventChannel);
+      if( channels.channel )
+        await interestList.getInterestList(channels.channel);
+      if( channels.eventChannel )
+        await raidEvent.getEvents(channels.eventChannel);
     });
   }
 }
@@ -570,17 +572,19 @@ async function channelCheck(guild) {
     channelCategoryID = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category").id;
 
   // Interest List Channel Check
-  let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
+  if( guild.id != happyMealServerID ) {
+    let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
-  if( channelExists === null )
-    await guild.createChannel(channelName, "text").then(async function(newChannel){
-      newChannel.setParent( channelCategoryID );
-      channelID = newChannel.id;
-      channel = await client.channels.get(channelID);
-    });
-  else {
-    channelID = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
-    channel = client.channels.get(channelID);
+    if( channelExists === null )
+      await guild.createChannel(channelName, "text").then(async function(newChannel){
+        newChannel.setParent( channelCategoryID );
+        channelID = newChannel.id;
+        channel = await client.channels.get(channelID);
+      });
+    else {
+      channelID = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
+      channel = client.channels.get(channelID);
+    }
   }
 
   // Event Channel Check
@@ -622,7 +626,7 @@ function InterestList() {
       'Scourge': [],
     };
 
-    await pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [serverID])
+    await pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [channel.guild.id])
     .then(function(results){
 
       var rows = JSON.parse(JSON.stringify(results));
@@ -979,7 +983,7 @@ function Event() {
     eventChannel.send( "If you're unable to see anything in this channel, make sure User Settings > Text & Images > Link Preview is checked." );
     eventChannel.send( richEmbed );
 
-    pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
+    pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [eventChannel.guild.id])
     .then(async function(results){
 
       var rows = JSON.parse(JSON.stringify(results));
@@ -993,11 +997,9 @@ function Event() {
 
           eventInfo = self.getEventInfo(event, results);
 
-          console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + ' "' + event.event_name + '" By: ' + event.created_by_username );
+          console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + '\n"' + event.event_name + '" by: ' + event.created_by_username + " for Server ID: " + eventChannel.guild.id + "\n" );
 
           await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
-
-          console.log( timestampPrefix() + 'Message ID: ' + message.id );
 
             if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
               await message.react('🆗');
