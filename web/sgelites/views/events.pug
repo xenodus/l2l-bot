@@ -18,13 +18,5 @@ block content
         #events-table-container
 
 block footer
-  script(src="/javascripts/events.js?5")
+  script(src="/javascripts/events.js?13")
   link(rel='stylesheet', href='/stylesheets/events.css?2')
-
-  script.
-    $(document).ready(function(){
-      let events = !{JSON.stringify(events)};
-
-      $("#events-table-container").html( eventDatatable(events) );
-      $("#events_table").addClass("bg-white text-dark");
-    });

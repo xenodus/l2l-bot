@@ -1,8 +1,19 @@
+$(document).ready(function(){
+
+  $("#events-table-container").addClass("spinner");
+
+  $.get("api/events", function(data){
+      $("#events-table-container").removeClass("spinner");
+      $("#events-table-container").html( eventDatatable(data) );
+      $("#events_table").addClass("bg-white text-dark");
+  });
+});
+
 function eventDatatable(events) {
   events = JSON.parse(events);
 
   if( events.length <= 0 )
-    return 'No events found.';
+    return 'No events have been scheduled.';
 
   /* Headers */
   let str = `

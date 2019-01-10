@@ -1,8 +1,151 @@
-function triumphDataTable(rows) {
-  rows = JSON.parse(rows).triumph;
+$(document).ready(function(){
 
-  if( rows.length <= 0 )
+  $("#badges-container, #raid-container, #pve-container, #pvp-container, #weapon-container, #gambit-container, #triump-container")
+  .addClass("spinner");
+
+  $.get("api/stats/all", function(data){
+
+    $("#badges-container, #raid-container, #pve-container, #pvp-container, #weapon-container, #gambit-container, #triump-container")
+    .removeClass("spinner");
+
+    // Badges
+    $("#badges-container").html( badges(data) );
+
+    // Raid Stats
+    $("#raid-container").html( raidDataTable(data) );
+    $("#raid_table").addClass("bg-white text-dark");
+    let raid_table = $("#raid_table").DataTable({
+      paging: true,
+      pageLength: 50,
+      fixedHeader: false,
+      "columnDefs": [ {
+          "searchable": false,
+          "orderable": false,
+          "targets": 0
+      } ],
+      "order": [[ 13, 'desc' ]]
+    });
+
+    raid_table.on( 'order.dt search.dt', function () {
+        raid_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+            cell.innerHTML = i+1;
+        } );
+    } ).draw();
+
+    // PvE Stats
+    $("#pve-container").html( pveDataTable(data) );
+    $("#pve_table").addClass("bg-white text-dark");
+    let pve_table = $("#pve_table").DataTable({
+      paging: true,
+      pageLength: 50,
+      fixedHeader: false,
+      "columnDefs": [ {
+          "searchable": false,
+          "orderable": false,
+          "targets": 0
+      } ],
+      "order": [[ 1, 'asc' ]]
+    });
+
+    pve_table.on( 'order.dt search.dt', function () {
+        pve_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+            cell.innerHTML = i+1;
+        } );
+    } ).draw();
+
+    // PvP Stats
+    $("#pvp-container").html( pvpDataTable(data) );
+    $("#pvp_table").addClass("bg-white text-dark");
+    let pvp_table = $("#pvp_table").DataTable({
+      paging: true,
+      pageLength: 50,
+      fixedHeader: false,
+      "columnDefs": [ {
+          "searchable": false,
+          "orderable": false,
+          "targets": 0
+      } ],
+      "order": [[ 7, 'desc' ]]
+    });
+
+    pvp_table.on( 'order.dt search.dt', function () {
+        pvp_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+            cell.innerHTML = i+1;
+        } );
+    } ).draw();
+
+    // Weapon Stats
+    $("#weapon-container").html( weaponDataTable(data) );
+    $("#weapon_table").addClass("bg-white text-dark");
+    let weapon_table = $("#weapon_table").DataTable({
+      paging: true,
+      pageLength: 50,
+      fixedHeader: false,
+      "columnDefs": [ {
+          "searchable": false,
+          "orderable": false,
+          "targets": 0
+      } ],
+      "order": [[ 1, 'asc' ]]
+    });
+
+    weapon_table.on( 'order.dt search.dt', function () {
+        weapon_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+            cell.innerHTML = i+1;
+        } );
+    } ).draw();
+
+    // Triumph
+    $("#triumph-container").html( triumphDataTable(data) );
+    $("#triumph_table").addClass("bg-white text-dark");
+    let triumph_table = $("#triumph_table").DataTable({
+      paging: true,
+      pageLength: 50,
+      fixedHeader: false,
+      "columnDefs": [ {
+          "searchable": false,
+          "orderable": false,
+          "targets": 0
+      } ],
+      "order": [[ 3, 'desc' ]]
+    });
+
+    triumph_table.on( 'order.dt search.dt', function () {
+        triumph_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+            cell.innerHTML = i+1;
+        } );
+    } ).draw();
+
+    // Gambit
+    $("#gambit-container").html( gambitDataTable(data) );
+    $("#gambit_table").addClass("bg-white text-dark");
+    let gambit_table = $("#gambit_table").DataTable({
+      paging: true,
+      pageLength: 50,
+      fixedHeader: false,
+      "columnDefs": [ {
+          "searchable": false,
+          "orderable": false,
+          "targets": 0
+      } ],
+      "order": [[ 1, 'asc' ]]
+    });
+
+    gambit_table.on( 'order.dt search.dt', function () {
+        gambit_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
+            cell.innerHTML = i+1;
+        } );
+    } ).draw();
+  });
+
+});
+
+function triumphDataTable(rows) {
+
+  if( rows.triumph.length <= 0 )
     return '';
+  else
+    rows = rows.triumph;
 
   /* Headers */
   str = `
@@ -42,8 +185,6 @@ function triumphDataTable(rows) {
 }
 
 function badges(data) {
-
-  data = JSON.parse(data);
 
   if( data.pve.length <= 0 && data.pvp.length <= 0 && data.weapon.length <= 0 && data.gambit.length <= 0 ) {
     return '';
@@ -582,10 +723,11 @@ function badges(data) {
 }
 
 function weaponDataTable(rows) {
-  rows = JSON.parse(rows).weapon;
 
-  if( rows.length <= 0 )
+  if( rows.weapon.length <= 0 )
     return '';
+  else
+    rows = rows.weapon;
 
   /* Headers */
   str = `
@@ -651,10 +793,10 @@ function weaponDataTable(rows) {
 
 function raidDataTable(rows) {
 
-  rows = JSON.parse(rows).raid;
-
-  if( rows.length <= 0 )
+  if( rows.raid.length <= 0 )
     return '';
+  else
+    rows = rows.raid;
 
   let raids = {
     'Levi': 'levi',
@@ -731,10 +873,10 @@ function raidDataTable(rows) {
 
 function pveDataTable(rows) {
 
-  rows = JSON.parse(rows).pve;
-
-  if( rows.length <= 0 )
+  if( rows.pve.length <= 0 )
     return '';
+  else
+    rows = rows.pve;
 
   /* Headers */
   str = `
@@ -793,10 +935,10 @@ function pveDataTable(rows) {
 
 function gambitDataTable(rows) {
 
-  rows = JSON.parse(rows).gambit;
-
-  if( rows.length <= 0 )
+  if( rows.gambit.length <= 0 )
     return '';
+  else
+    rows = rows.gambit;
 
   var self = this;
 
@@ -906,10 +1048,10 @@ function gambitDataTable(rows) {
 
 function pvpDataTable(rows) {
 
-  rows = JSON.parse(rows).pvp;
-
-  if( rows.length <= 0 )
+  if( rows.pvp.length <= 0 )
     return '';
+  else
+    rows = rows.pvp;
 
   let valorRanks = [
     'Guardian',

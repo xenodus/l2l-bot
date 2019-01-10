@@ -8,49 +8,13 @@ block header
   link(rel='stylesheet', href='https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css')
   link(rel='stylesheet', href='https://cdn.datatables.net/fixedheader/3.1.5/css/fixedHeader.bootstrap4.min.css')
 
+  script(src="/javascripts/roster.js?5")
 block content
   .row.pb-5
     .col-md-12
       h2.mt-3 Clan Roster
-      .table-responsive
-        table#roster_table.display.table.table-striped.bg-white.text-dark
-          thead
-            tr
-              th.no-sort
-              th.text-left Name
-              th.text-left Clan
-              th.text.left Last Online
-          tbody
-            each member, index in members
-              - var last_online_unix = moment(member.last_online).unix();
-              tr
-                td=index+1
-                td=member.username
-                  div.bnet_id
-                    small=member.bnet_id
-                td=member.clan_no
-                td(data-sort=''+last_online_unix)=moment(member.last_online).format("DD MMM YYYY")
+      .roster-container.spinner
+
 
 block footer
   link(rel='stylesheet', href='/stylesheets/roster.css?3')
-
-  script.
-    $(document).ready(function(){
-      let roster_table = $("#roster_table").DataTable({
-        paging: true,
-        fixedHeader: true,
-        pageLength: 50,
-        "columnDefs": [ {
-            "searchable": false,
-            "orderable": false,
-            "targets": 0
-        } ],
-        "order": [[ 1, 'asc' ]]
-      });
-
-      roster_table.on( 'order.dt search.dt', function () {
-          roster_table.column(0, {search:'applied', order:'applied'}).nodes().each( function (cell, i) {
-              cell.innerHTML = i+1;
-          } );
-      } ).draw();
-    });
