@@ -125,6 +125,14 @@ function badges(data) {
     highest_infamy_resets_count = data.gambit.reduce(function(prev, current){
       return current.infamy_resets > prev.infamy_resets ? current : prev;
     });
+
+    highest_invasion_kills_count = data.gambit.reduce(function(prev, current){
+      return current.invasionKills > prev.invasionKills ? current : prev;
+    });
+
+    highest_motes_deposited_count = data.gambit.reduce(function(prev, current){
+      return current.motesDeposited > prev.motesDeposited ? current : prev;
+    });
   }
 
   if( data.weapon.length > 0 ) {
@@ -189,7 +197,8 @@ function badges(data) {
   let badgeData = {
     pve: {},
     pvp: {},
-    weapon: {}
+    weapon: {},
+    gambit: {}
   }
 
   if( data.pve.length > 0 ) {
@@ -273,6 +282,35 @@ function badges(data) {
         count: highest_kd_count.killsDeathsRatio.toLocaleString(),
         color: 'blue-dark',
         icon: 'fas fa-balance-scale'
+      },
+    }
+  }
+
+  if( data.gambit.length > 0 ) {
+    badgeData.gambit = {
+      'highest_infamy_resets_count' : {
+        badgeName: 'Poker Face',
+        userId: highest_infamy_resets_count.bnet_id,
+        title: 'Infamy Resets:',
+        count: highest_infamy_resets_count.infamy_resets.toLocaleString(),
+        color: 'teal',
+        icon: 'ra ra-spades-card'
+      },
+      'highest_motes_deposited_count' : {
+        badgeName: 'Hoarder',
+        userId: highest_motes_deposited_count.bnet_id,
+        title: 'Motes Deposited:',
+        count: highest_motes_deposited_count.motesDeposited.toLocaleString(),
+        color: 'orange',
+        icon: 'fas fa-dice-d20'
+      },
+      'highest_invasion_kills_count' : {
+        badgeName: 'Clingy',
+        userId: highest_invasion_kills_count.bnet_id,
+        title: 'Invasion Kills:',
+        count: highest_invasion_kills_count.invasionKills.toLocaleString(),
+        color: 'purple',
+        icon: 'ra ra-player-shot'
       },
     }
   }
@@ -487,6 +525,27 @@ function badges(data) {
     `;
   }
 
+  for( key in badgeData.gambit ) {
+    str += `
+      <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12">
+        <div class="main-wrapper">
+          <div class="badge `+badgeData.gambit[key].color+`">
+            <div class="circle"> <i class="`+badgeData.gambit[key].icon+`"></i></div>
+            <div class="ribbon">`+badgeData.gambit[key].badgeName+`</div>
+          </div>
+          <div class="badge-description">
+            <div class="player">
+              <strong>`+badgeData.gambit[key].userId+`</strong>
+            </div>
+            <div class="stat">
+              `+badgeData.gambit[key].title+`<br/>`+badgeData.gambit[key].count+`
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   str += `
     </div>
     <div>
@@ -563,7 +622,7 @@ function weaponDataTable(rows) {
     str += `
     <tr>
       <td>`+(i+1)+`</td>
-      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].display_name+bnetId+`</td>
       <td class="text-left">`+rows[i].clan_no+`</td>
       <td class="text-right">`+rows[i].weaponKillsAutoRifle.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].weaponKillsBow.toLocaleString()+`</td>
@@ -624,9 +683,9 @@ function raidDataTable(rows) {
     str += `<th class="text-nowrap text-right">`+raid+`</th>`;
 
     if( raid == 'LW' )
-      str += `<th class="text-center">Petra</th>`;
+      str += `<th class="text-center text-nowrap">Flawless LW</th>`;
     else if( raid == 'SoTP' )
-      str += `<th class="text-center">Diamond</th>`;
+      str += `<th class="text-center text-nowrap">Flawless SoTP</th>`;
   });
 
   str += `<th class="text-left">Total</th>`;
@@ -642,18 +701,18 @@ function raidDataTable(rows) {
     str += `
     <tr>
       <td>`+(i+1)+`</td>
-      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].display_name+bnetId+`</td>
       <td class="text-left">`+rows[i].clan_no+`</td>`;
 
     let activityCount = 0;
 
     Object.keys(raids).forEach(function(raid) {
-      str += `<td class="text-left">`+rows[i][raids[raid]]+`</td>`;
+      str += `<td class="text-right">`+rows[i][raids[raid]]+`</td>`;
 
       if( raid == 'LW' )
         str += `<td class="text-center" data-sort="`+rows[i].petra_run+`">`+(rows[i].petra_run>0 ?'<i class="fas fa-check text-success"></i>':'<i class="fas fa-times text-danger"></i>')+`</td>`;
       else if( raid == 'SoTP' )
-        str += `<td class="text-center" data-sort="`+rows[i].petra_run+`">`+(rows[i].diamond_run>0 ?'<i class="fas fa-check text-success"></i>':'<i class="fas fa-times text-danger"></i>')+`</td>`;
+        str += `<td class="text-center" data-sort="`+rows[i].diamond_run+`">`+(rows[i].diamond_run>0 ?'<i class="fas fa-check text-success"></i>':'<i class="fas fa-times text-danger"></i>')+`</td>`;
 
       activityCount+= rows[i][raids[raid]];
     });
@@ -709,7 +768,7 @@ function pveDataTable(rows) {
     str += `
     <tr>
       <td>`+(i+1)+`</td>
-      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].display_name+bnetId+`</td>
       <td class="text-left">`+rows[i].clan_no+`</td>
       <td class="text-right text-success">`+rows[i].kills.toLocaleString()+`</td>
       <td class="text-right text-danger">`+rows[i].deaths.toLocaleString()+`</td>
@@ -817,7 +876,7 @@ function gambitDataTable(rows) {
     str += `
     <tr>
       <td>`+(i+1)+`</td>
-      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].display_name+bnetId+`</td>
       <td class="text-center">`+rows[i].clan_no+`</td>
       <td class="text-right" data-sort="`+rows[i].infamy+`">`+rows[i].infamy.toLocaleString()+`<div class="rank-`+infamy_rank.split(" ").join("").toLowerCase()+`"><small>`+infamy_rank+`</small></div></td>
       <td class="text-right">`+rows[i].infamy_resets+`</td>
@@ -829,7 +888,7 @@ function gambitDataTable(rows) {
       <td class="text-right text-success">`+rows[i].invasionKills.toLocaleString()+`</td>
       <td class="text-right text-success">`+rows[i].invaderKills.toLocaleString()+`</td>
       <td class="text-right text-danger">`+rows[i].invaderDeaths.toLocaleString()+`</td>
-      <td class="text-right text-success">`+parseInt(rows[i].primevalHealing).toLocaleString()+`%</td>
+      <td class="text-right text-success" data-sort="`+rows[i].primevalHealing+`">`+parseInt(rows[i].primevalHealing).toLocaleString()+`%</td>
       <td class="text-right text-success" data-sort="`+rows[i].primevalDamage+`">`+self.formatNumber(rows[i].primevalDamage)+`</td>
       <td class="text-right text-success">`+rows[i].motesDeposited.toLocaleString()+`</td>
       <td class="text-right text-danger">`+rows[i].motesLost.toLocaleString()+`</td>
@@ -932,7 +991,7 @@ function pvpDataTable(rows) {
     str += `
     <tr>
       <td>`+(i+1)+`</td>
-      <td class="text-left">`+rows[i].username+bnetId+`</td>
+      <td class="text-left">`+rows[i].display_name+bnetId+`</td>
       <td class="text-center">`+rows[i].clan_no+`</td>
       <td class="text-right">`+rows[i].kd+`</td>
       <td class="text-right">`+rows[i].kda+`</td>

@@ -10,7 +10,6 @@ const traveler = new Traveler({
     debug: false
 });
 
-const clanIDs = ['2754160', '2835157'];
 const membershipType = 4;
 const glory_hash = 2000925172; // competitive
 const valor_hash = 3882308435; // quickplay
@@ -23,7 +22,7 @@ let clanMembersInfo = [];
 console.log("\n\n\n\n" + timestampPrefix() + "---- BEGIN GET PVP STATS SCRIPT ----");
 console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
-getClanMembers(clanIDs)
+getClanMembers()
 .then(function(clanMembersInfo){
 	console.log(timestampPrefix() + "Performing step 2 of 4: Get PVP Stats Clan Members");
 
@@ -41,9 +40,6 @@ getClanMembers(clanIDs)
 
 					await pool.query("INSERT INTO clan_pvp_stats SET ?", {
 						user_id: member.membershipId,
-						username: member.displayName,
-						bnet_id: member.bnetID,
-						clan_no: member.clanNo,
             triumph: member.stats.triumph,
             gold_medals: member.stats.gold_medals,
 						kd: member.stats.kd,
@@ -66,86 +62,39 @@ getClanMembers(clanIDs)
 	}
 });
 
-async function getClanMembers(clanIDs) {
-	for(key in clanIDs)	{
-		var no = 0;
+async function getClanMembers() {
 
-		await axios.get('https://www.bungie.net/Platform/GroupV2/' + clanIDs[key] + '/Members/', { headers: { 'X-API-Key': config.bungieAPIKey } })
-		.then(async function(response){
-			if( response.status == 200 ) {
-				if( response.data.Response.results.length > 0 ) {
-					let memberRecords = response.data.Response.results;
+  await pool.query("SELECT * FROM clan_members")
+  .then(async function(members){
+    if( members.length > 0 ) {
 
-					for(var i=0; i<memberRecords.length;i++) {
+      var no = 0;
+      for( var i=0; i<members.length; i++ ) {
 
-						let bnetID = '';
+        clanMembersInfo.push({
+          displayName: members[i].display_name,
+          membershipId: members[i].destiny_id,
+          bnetID: members[i].bnet_id,
+          clanNo: members[i].clan_no,
+          stats: {
+            'triumph': 0,
+            'gold_medals': 0,
+            'kd': 0,
+            'kad': 0,
+            'kda': 0,
+            'glory': 0,
+            'valor': 0,
+            'glory_step': 0,
+            'valor_step': 0,
+            'valor_resets': 0
+          }
+        });
 
-						if( memberRecords[i].bungieNetUserInfo && memberRecords[i].bungieNetUserInfo.membershipId ) {
-
-							// Retrieve from DB if info exists
-							bnetID = await pool.query("SELECT * FROM destiny_user WHERE bungieId = ? LIMIT 1", [memberRecords[i].bungieNetUserInfo.membershipId])
-							.then(function(r){
-								if( r.length > 0 ) {
-									return r[0].bnetId;
-								}
-								return '';
-							}).catch(function(e){
-								return '';
-							});
-
-							// Else retrieve from Bungie's slow API
-							if( bnetID === '' ) {
-								bnetID = await axios.get('https://www.bungie.net/Platform/User/GetBungieNetUserById/' + memberRecords[i].bungieNetUserInfo.membershipId, { headers: { 'X-API-Key': config.bungieAPIKey } })
-								.then(function(r){
-									if( r.status == 200 ) {
-										if( r.data.Response.blizzardDisplayName ) {
-											return r.data.Response.blizzardDisplayName;
-										}
-									}
-									return '';
-								})
-								.catch(function(e){
-									console.log( timestampPrefix() + 'Error fetching BNetID for: ', memberRecords[i].destinyUserInfo.displayName );
-									return '';
-								});
-
-								pool.query("INSERT INTO destiny_user SET ?", {
-									destinyId: memberRecords[i].destinyUserInfo.membershipId,
-									bungieId: memberRecords[i].bungieNetUserInfo.membershipId,
-									display_name: memberRecords[i].destinyUserInfo.displayName,
-									bnetId: bnetID
-								});
-							}
-						}
-
-						await clanMembersInfo.push({
-							displayName: memberRecords[i].destinyUserInfo.displayName,
-							membershipId: memberRecords[i].destinyUserInfo.membershipId,
-							bnetID: bnetID,
-							clanNo: parseInt(key) + 1,
-							stats: {
-                'triumph': 0,
-                'gold_medals': 0,
-								'kd': 0,
-								'kad': 0,
-								'kda': 0,
-								'glory': 0,
-								'valor': 0,
-								'glory_step': 0,
-								'valor_step': 0,
-                'valor_resets': 0
-							}
-						});
-
-						no++;
-						console.log( timestampPrefix() + no + " of " + memberRecords.length + " clan members' info retrieved for clan ID " + clanIDs[key] );
-					}
-				}
-			}
-		}).catch(function(e){
-			//console.log(e);
-		});
-	}
+        no++;
+        console.log( timestampPrefix() + no + " of " + members.length + " clan members' info retrieved" );
+      }
+    }
+  });
 
 	return clanMembersInfo;
 }

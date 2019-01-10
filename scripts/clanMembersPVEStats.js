@@ -10,7 +10,6 @@ const traveler = new Traveler({
     debug: false
 });
 
-const clanIDs = ['2754160', '2835157'];
 const membershipType = 4;
 
 const pveKeys = [
@@ -51,7 +50,7 @@ let clanMembersInfo = [];
 console.log("\n\n\n\n" + timestampPrefix() + "---- BEGIN GET PVE STATS SCRIPT ----");
 console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
-getClanMembers(clanIDs)
+getClanMembers()
 .then(function(clanMembersInfo){
 	console.log(timestampPrefix() + "Performing step 2 of 4: Get PVE Stats of Clan Members");
 
@@ -83,89 +82,39 @@ getClanMembers(clanIDs)
 	}
 });
 
-async function getClanMembers(clanIDs) {
-	for(key in clanIDs)	{
-		var no = 0;
+async function getClanMembers() {
 
-		await axios.get('https://www.bungie.net/Platform/GroupV2/' + clanIDs[key] + '/Members/', { headers: { 'X-API-Key': config.bungieAPIKey } })
-		.then(async function(response){
-			if( response.status == 200 ) {
-				if( response.data.Response.results.length > 0 ) {
-					let memberRecords = response.data.Response.results;
+  await pool.query("SELECT * FROM clan_members")
+  .then(async function(members){
+    if( members.length > 0 ) {
 
-					for(var i=0; i<memberRecords.length;i++) {
+      var no = 0;
+      for( var i=0; i<members.length; i++ ) {
 
-						let bnetID = '';
+        let member = {
+          account: {
+            user_id: members[i].destiny_id,
+            last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
+          },
+          pve: {},
+          weapon: {}
+        }
 
-						if( memberRecords[i].bungieNetUserInfo && memberRecords[i].bungieNetUserInfo.membershipId ) {
+        for(var index in pveKeys) {
+          member.pve[pveKeys[index]] = 0;
+        }
 
-							// Retrieve from DB if info exists
-							bnetID = await pool.query("SELECT * FROM destiny_user WHERE bungieId = ? LIMIT 1", [memberRecords[i].bungieNetUserInfo.membershipId])
-							.then(function(r){
-								if( r.length > 0 ) {
-									return r[0].bnetId;
-								}
-								return '';
-							}).catch(function(e){
-								return '';
-							});
+        for(var index in weaponKillsKeys) {
+          member.weapon[weaponKillsKeys[index]] = 0;
+        }
 
-							// Else retrieve from Bungie's slow API
-							if( bnetID === '' ) {
-								bnetID = await axios.get('https://www.bungie.net/Platform/User/GetBungieNetUserById/' + memberRecords[i].bungieNetUserInfo.membershipId, { headers: { 'X-API-Key': config.bungieAPIKey } })
-								.then(function(r){
-									if( r.status == 200 ) {
-										if( r.data.Response.blizzardDisplayName ) {
-											return r.data.Response.blizzardDisplayName;
-										}
-									}
-									return '';
-								})
-								.catch(function(e){
-									console.log( timestampPrefix() + 'Error fetching BNetID for: ', memberRecords[i].destinyUserInfo.displayName );
-									return '';
-								});
+        clanMembersInfo.push(member);
 
-								pool.query("INSERT INTO destiny_user SET ?", {
-									destinyId: memberRecords[i].destinyUserInfo.membershipId,
-									bungieId: memberRecords[i].bungieNetUserInfo.membershipId,
-									display_name: memberRecords[i].destinyUserInfo.displayName,
-									bnetId: bnetID
-								});
-							}
-						}
-
-            let member = {
-              account: {
-                user_id: memberRecords[i].destinyUserInfo.membershipId,
-                username: memberRecords[i].destinyUserInfo.displayName,
-                bnet_id: bnetID,
-                clan_no: parseInt(key) + 1,
-                last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
-              },
-              pve: {},
-              weapon: {}
-            }
-
-            for(var index in pveKeys) {
-              member.pve[pveKeys[index]] = 0;
-            }
-
-            for(var index in weaponKillsKeys) {
-              member.weapon[weaponKillsKeys[index]] = 0;
-            }
-
-						clanMembersInfo.push(member);
-
-						no++;
-						console.log( timestampPrefix() + no + " of " + memberRecords.length + " clan members' info retrieved for clan ID " + clanIDs[key] );
-					}
-				}
-			}
-		}).catch(function(e){
-			console.log(e);
-		});
-	}
+        no++;
+        console.log( timestampPrefix() + no + " of " + members.length + " clan members' info retrieved" );
+      }
+    }
+  });
 
 	return clanMembersInfo;
 }
@@ -198,6 +147,8 @@ async function getPVEStats(clanMembersInfo) {
       //console.log(e);
       console.log( timestampPrefix() + 'Error fetching PVE Stats for: ', clanMembersInfo[i] );
     });
+
+    console.log( clanMembersInfo[i] );
 	}
 
 	return clanMembersInfo;

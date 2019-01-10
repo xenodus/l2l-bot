@@ -10,6 +10,8 @@ const traveler = new Traveler({
     debug: false
 });
 
+const devMode = false;
+const membershipType = 4;
 const raidReportURL = 'https://b9bv2wd97h.execute-api.us-west-2.amazonaws.com/prod/api/player/';
 const petraRunHash = 4177910003;
 const diamondRunHash = 2648109757;
@@ -24,25 +26,24 @@ const raidActivityHash = {
 	'sotp': [548750096]
 };
 
-const clanMembers = ["xenodus#1931", "crandle#1800"];
-const clanIDs = ['2754160', '2835157'];
-const membershipType = 4;
-
 // Get Clan
 let clanMembersInfo = [];
 
 console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
-getClanMembers(clanIDs)
+getClanMembers()
 .then(function(clanMembersInfo){
+
 	if( clanMembersInfo.length > 0 ) {
 		console.log(timestampPrefix() + "Performing step 2 of 4: Get Raid Info of Members");
 
 		getRaidInfo(clanMembersInfo)
-		.then(function(clanMembersInfo){
+		.then(async function(clanMembersInfo){
+
 			//console.log( clanMembersInfo );
 			console.log(timestampPrefix() + "Performing step 3 of 4: Truncating table");
-			pool.query("TRUNCATE TABLE clan_raid_report")
+
+			await pool.query("TRUNCATE TABLE clan_raid_report")
 			.then(async function(){
 				console.log(timestampPrefix() + "Performing step 4 of 4: Inserting records");
 
@@ -51,9 +52,6 @@ getClanMembers(clanIDs)
 
 					await pool.query("INSERT INTO clan_raid_report SET ?", {
 						user_id: member.membershipId,
-						username: member.displayName,
-						bnet_id: member.bnetID,
-						clan_no: member.clanNo,
 						levi: member.raidCompletions.levi,
 						levip: member.raidCompletions.levip,
 						eow: member.raidCompletions.eow,
@@ -76,98 +74,51 @@ getClanMembers(clanIDs)
 	}
 });
 
-async function getClanMembers(clanIDs) {
-	for(key in clanIDs)	{
-		var no = 0;
+async function getClanMembers() {
 
-		await axios.get('https://www.bungie.net/Platform/GroupV2/' + clanIDs[key] + '/Members/', { headers: { 'X-API-Key': config.bungieAPIKey } })
-		.then(async function(response){
-			if( response.status == 200 ) {
-				if( response.data.Response.results.length > 0 ) {
-					let memberRecords = response.data.Response.results;
+	await pool.query("SELECT * FROM clan_members")
+	.then(async function(members){
+		if( members.length > 0 ) {
 
-					for(var i=0; i<memberRecords.length;i++) {
+			var no = 0;
+			for( var i=0; i<members.length; i++ ) {
 
-						let bnetID = '';
+				let petra_run = 0;
+				let diamond_run = 0;
 
-						if( memberRecords[i].bungieNetUserInfo && memberRecords[i].bungieNetUserInfo.membershipId ) {
+				await traveler.getProfile(membershipType, members[i].destiny_id, { components: [100, 900] })
+				.then(function(r){
+					petra_run = r.Response.profileRecords.data.records[petraRunHash].objectives[0].progress > 0 ? 1 : 0;
+					diamond_run = r.Response.profileRecords.data.records[diamondRunHash].objectives[0].progress > 0 ? 1 : 0;
+				}).catch(function(e){
+					//
+				});
 
-							// Retrieve from DB is info exists
-							bnetID = await pool.query("SELECT * FROM destiny_user WHERE bungieId = ? LIMIT 1", [memberRecords[i].bungieNetUserInfo.membershipId])
-							.then(function(r){
-								if( r.length > 0 ) {
-									return r[0].bnetId;
-								}
-								return '';
-							}).catch(function(e){
-								return '';
-							});
-
-							// Else retrieve from Bungie's slow API
-							if( bnetID === '' ) {
-								bnetID = await axios.get('https://www.bungie.net/Platform/User/GetBungieNetUserById/' + memberRecords[i].bungieNetUserInfo.membershipId, { headers: { 'X-API-Key': config.bungieAPIKey } })
-								.then(function(r){
-									if( r.status == 200 ) {
-										if( r.data.Response.blizzardDisplayName ) {
-											return r.data.Response.blizzardDisplayName;
-										}
-									}
-									return '';
-								});
-
-								pool.query("INSERT INTO destiny_user SET ?", {
-									destinyId: memberRecords[i].destinyUserInfo.membershipId,
-									bungieId: memberRecords[i].bungieNetUserInfo.membershipId,
-									display_name: memberRecords[i].destinyUserInfo.displayName,
-									bnetId: bnetID
-								});
-							}
-						}
-
-						let last_online = null;
-						let petra_run = 0;
-						let diamond_run = 0;
-
-						await traveler.getProfile(membershipType, memberRecords[i].destinyUserInfo.membershipId, { components: [100, 900] })
-						.then(function(r){
-							last_online = r.Response.profile.data.dateLastPlayed;
-							last_online = moment(last_online.substr(0,10), "YYYY-MM-DD").isValid() ? moment(last_online.substr(0,10), "YYYY-MM-DD").format("YYYY-MM-DD") : null;
-
-							petra_run = r.Response.profileRecords.data.records[petraRunHash].objectives[0].progress > 0 ? 1 : 0;
-							diamond_run = r.Response.profileRecords.data.records[diamondRunHash].objectives[0].progress > 0 ? 1 : 0;
-						}).catch(function(e){
-							//
-						});
-
-						await clanMembersInfo.push({
-							displayName: memberRecords[i].destinyUserInfo.displayName,
-							membershipId: memberRecords[i].destinyUserInfo.membershipId,
-							bnetID: bnetID,
-							clanNo: parseInt(key) + 1,
-							last_online: last_online,
-							petra_run: petra_run,
-							diamond_run: diamond_run,
-							raidCompletions: {
-								'levi': 0,
-								'levip': 0,
-								'eow': 0,
-								'eowp': 0,
-								'sos': 0,
-								'sosp': 0,
-								'lw': 0,
-								'sotp': 0,
-							}
-						});
-
-						no++;
-						console.log( timestampPrefix() + no + " of " + memberRecords.length + " clan members' info retrieved for clan ID " + clanIDs[key] );
+				clanMembersInfo.push({
+					displayName: members[i].display_name,
+					membershipId: members[i].destiny_id,
+					bnetID: members[i].bnet_id,
+					clanNo: members[i].clan_no,
+					last_online: members[i].last_online,
+					petra_run: petra_run,
+					diamond_run: diamond_run,
+					raidCompletions: {
+						'levi': 0,
+						'levip': 0,
+						'eow': 0,
+						'eowp': 0,
+						'sos': 0,
+						'sosp': 0,
+						'lw': 0,
+						'sotp': 0,
 					}
-				}
+				});
+
+				no++;
+				console.log( timestampPrefix() + no + " of " + members.length + " clan members' info retrieved" );
 			}
-		}).catch(function(e){
-			//console.log(e);
-		});
-	}
+		}
+	});
 
 	return clanMembersInfo;
 }

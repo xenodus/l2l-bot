@@ -50,17 +50,17 @@ router.get('/events', async function(req, res, next) {
 });
 
 router.get('/roster', async function(req, res, next) {
-  let members = await pool.query("SELECT username, bnet_id, clan_no, last_online FROM `clan_raid_report` WHERE 1");
+  let members = await pool.query("SELECT display_name as username, bnet_id, clan_no, last_online FROM `clan_members` WHERE 1");
   res.render('roster', { title: 'Roster', members: members, moment: moment });
 });
 
 router.get('/leaderboards', async function(req, res, next) {
-  let raid_results = await pool.query("SELECT * FROM clan_raid_report");
-  let pvp_results = await pool.query("SELECT * FROM clan_pvp_stats");
-  let gambit_results = await pool.query("SELECT * FROM clan_gambit_stats");
-  let pve_results = await pool.query("SELECT clan_pve_stats.*, (levi + levip + eow + eowp + sos + sosp + lw + sotp) as raid_count FROM `clan_pve_stats` JOIN clan_raid_report ON clan_pve_stats.user_id = clan_raid_report.user_id");
-  let weapon_results = await pool.query("SELECT * FROM clan_weapon_stats");
-  let triumph_results = await pool.query("SELECT username, bnet_id, clan_no, triumph, last_updated FROM clan_pvp_stats");
+  let raid_results = await pool.query("SELECT * FROM clan_raid_report LEFT JOIN clan_members ON clan_raid_report.user_id = clan_members.destiny_id");
+  let pvp_results = await pool.query("SELECT * FROM clan_pvp_stats LEFT JOIN clan_members ON clan_pvp_stats.user_id = clan_members.destiny_id");
+  let gambit_results = await pool.query("SELECT * FROM clan_gambit_stats LEFT JOIN clan_members ON clan_gambit_stats.user_id = clan_members.destiny_id");
+  let pve_results = await pool.query("SELECT clan_members.*, clan_pve_stats.*, (levi + levip + eow + eowp + sos + sosp + lw + sotp) as raid_count FROM `clan_pve_stats` JOIN clan_raid_report ON clan_pve_stats.user_id = clan_raid_report.user_id JOIN clan_members ON clan_pve_stats.user_id = clan_members.destiny_id");
+  let weapon_results = await pool.query("SELECT * FROM clan_weapon_stats LEFT JOIN clan_members ON clan_weapon_stats.user_id = clan_members.destiny_id");
+  let triumph_results = await pool.query("SELECT display_name as username, bnet_id, clan_no, triumph, last_updated FROM clan_members");
 
   let data = {
     raid: raid_results,

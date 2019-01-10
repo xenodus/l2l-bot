@@ -60,7 +60,8 @@ html(lang="en")
               a.nav-link.pl-3.pr-3.active(href='/leaderboards') Leaderboards
 
             li.nav-item
-              a.bg-warning.text-light.pl-3.pr-3.nav-link(href='https://www.bungie.net/en/ClanV2/Index?groupId=2754160', target="_blank") Join Us
+              a.disabled.font-weight-bold.bg-warning.text-light.pl-3.pr-3.nav-link(href='https://www.bungie.net/en/ClanV2/Index?groupId=2754160', target="_blank", style="opacity: 0.5;")
+                s Join Us
 
     .container-fluid.main-container(style="min-height: calc(100vh - 133px);")
       block content
