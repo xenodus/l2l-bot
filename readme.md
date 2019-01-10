@@ -2,9 +2,13 @@
 
 Discord bot that help manage raid events and newbie learning list among other things. Come say hi and see the bot in action @ [https://discordapp.com/invite/qkUuhB7](https://discordapp.com/invite/qkUuhB7).
 
+Web directory, /web/sgelites contains source code for: [https://sgelites.com](https://sgelites.com).
+
+Scripts directory, /scripts contains scripts to grab clan members' stats through Bungie API.
+
 ## Events
 
-3 reaction emojis: :ok:, 🤔 and :no_entry: and show under each event's description.
+3 reaction emojis: :ok:, 🤔 and :no_entry: are displayed under each event's description.
 
 Subscribe to an event by reacting :ok:, be added to the reserve list by reacting 🤔 and withdraw by reacting :no_entry:.
 
