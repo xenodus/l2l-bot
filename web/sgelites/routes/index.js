@@ -9,7 +9,8 @@ var sitemap = sm.createSitemap ({
     { url: '/' },
     { url: '/roster',  changefreq: 'weekly',  priority: 0.7 },
     { url: '/events',  changefreq: 'daily',  priority: 0.7 },
-    { url: '/leaderboards',  changefreq: 'daily',  priority: 0.7 }
+    { url: '/leaderboards',  changefreq: 'daily',  priority: 0.7 },
+    { url: '/charts',  changefreq: 'daily',  priority: 0.7 }
   ]
 });
 
@@ -32,6 +33,10 @@ router.get('/roster', async function(req, res, next) {
 
 router.get('/leaderboards', async function(req, res, next) {
   res.render('leaderboards', { title: 'Leaderboards' });
+});
+
+router.get('/charts', async function(req, res, next) {
+  res.render('charts', { title: 'Charts' });
 });
 
 module.exports = router;

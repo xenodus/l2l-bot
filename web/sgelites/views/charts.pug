@@ -1,0 +1,24 @@
+extends layout
+
+block header
+  script(src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js")
+
+  - var jsHref = '/javascripts/charts.js?' + Date.now();
+  script(src= jsHref)
+block content
+  .row
+    .col-md-12.pt-4.pb-4
+      .charts-container
+        .row
+          .col-md-6
+            canvas#lastOnline.chart-canvas.bg-white.pt-2.pb-4.pl-4.pr-4.mb-3.spinner.spinner.d-flex.justify-content-center
+          .col-md-6
+            canvas#classPlaytime.chart-canvas.bg-white.pt-2.pb-3.pl-4.pr-4.mb-3.spinner.d-flex.justify-content-center
+          .col-md-6
+            canvas#weapons.chart-canvas.bg-white.pt-2.pb-3.pl-4.pr-4.mb-3.spinner.spinner.d-flex.justify-content-center
+          .col-md-6
+            canvas#raids.chart-canvas.bg-white.pt-2.pb-3.pl-4.pr-4.mb-3.spinner.spinner.d-flex.justify-content-center
+
+block footer
+  - var cssHref = '/stylesheets/charts.css?' + Date.now();
+  link(rel='stylesheet', href= cssHref)

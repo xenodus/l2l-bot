@@ -5,7 +5,14 @@ var express = require('express');
 var router = express.Router();
 
 router.get('/members', function(req, res, next) {
-  pool.query("SELECT display_name as username, bnet_id, clan_no, triumph, last_online FROM `clan_members` WHERE 1")
+  pool.query("SELECT * FROM `clan_members` WHERE 1")
+  .then(function(results){
+    res.json( JSON.stringify(results) );
+  })
+});
+
+router.get('/characters', function(req, res, next) {
+  pool.query("SELECT * FROM clan_members_characters")
   .then(function(results){
     res.json( JSON.stringify(results) );
   })
@@ -27,7 +34,7 @@ router.get('/events', function(req, res, next) {
   event.server_id = ? AND
   event.status = 'active' AND
   ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() )
-  ORDER BY event.event_id  DESC
+  ORDER BY event.event_date ASC, event.event_id  DESC
   `;
 
   pool.query(sql, [serverID])

@@ -12,6 +12,11 @@ const traveler = new Traveler({
 
 const devMode = false;
 const clanIDs = ['2754160', '2835157'];
+const classHash = {
+  '2271682572': 'Warlock',
+  '3655393761': 'Titan',
+  '671679327': 'Hunter'
+};
 const membershipType = 4;
 
 // Get Clan
@@ -26,10 +31,31 @@ getClanMembers(clanIDs)
 
     // destiny_id = user_id = membershipId
     await pool.query("TRUNCATE TABLE clan_members");
+    await pool.query("TRUNCATE TABLE clan_members_characters");
 
     console.log(timestampPrefix() + "Performing step 3 of 3: Inserting records");
     for(var i=0; i<clanMembersInfo.length; i++) {
       let member = clanMembersInfo[i];
+
+      if( member.characters.length > 0 ) {
+        for( var index in member.characters ) {
+          character = member.characters[index];
+
+          await pool.query("INSERT INTO clan_members_characters SET ?", {
+            user_id: member.membershipId,
+            character_id: character.character_id,
+            class: character.class,
+            light: character.light,
+            level: character.level,
+            emblemPath: character.emblemPath,
+            emblemBackgroundPath: character.emblemBackgroundPath,
+            minutesPlayedTotal: character.minutesPlayedTotal,
+            last_updated: moment().format("YYYY-MM-DD HH:mm:ss")
+          }).catch(function(e){
+            console.log(e)
+          });
+        }
+      }
 
       await pool.query("INSERT INTO clan_members SET ?", {
         destiny_id: member.membershipId,
@@ -58,7 +84,7 @@ async function getClanMembers(clanIDs) {
           let memberRecords = response.data.Response.results;
 
           if( devMode )
-            memberRecords = memberRecords.splice(0,2);
+            memberRecords = memberRecords.splice(0,10);
 
           for(var i=0; i<memberRecords.length;i++) {
 
@@ -100,12 +126,31 @@ async function getClanMembers(clanIDs) {
 
             let last_online = null;
             let triumph = 0;
+            let characters = [];
 
-            await traveler.getProfile(membershipType, memberRecords[i].destinyUserInfo.membershipId, { components: [100, 900] })
+            await traveler.getProfile(membershipType, memberRecords[i].destinyUserInfo.membershipId, { components: [100, 200, 900] })
             .then(function(r){
               last_online = r.Response.profile.data.dateLastPlayed;
               last_online = moment(last_online.substr(0,10), "YYYY-MM-DD").isValid() ? moment(last_online.substr(0,10), "YYYY-MM-DD").format("YYYY-MM-DD") : null;
               triumph = r.Response.profileRecords.data.score;
+
+              if( Object.keys(r.Response.characters.data).length > 0 ) {
+                character_ids = Object.keys(r.Response.characters.data);
+
+                for( var index in character_ids ) {
+                  character = r.Response.characters.data[ character_ids[index] ];
+
+                  characters.push({
+                    character_id: character.characterId,
+                    class: classHash[character.classHash],
+                    light: character.light,
+                    level: character.levelProgression.level,
+                    emblemPath: character.emblemPath ? character.emblemPath : '',
+                    emblemBackgroundPath: character.emblemBackgroundPath ? character.emblemBackgroundPath : '',
+                    minutesPlayedTotal: character.minutesPlayedTotal,
+                  });
+                }
+              }
             }).catch(function(e){
               //
             });
@@ -116,11 +161,14 @@ async function getClanMembers(clanIDs) {
               bnetID: bnetID,
               clanNo: parseInt(key) + 1,
               triumph: triumph,
-              last_online: last_online
+              last_online: last_online,
+              characters: characters
             });
 
             no++;
-            console.log( timestampPrefix() + no + " of " + memberRecords.length + " clan members' info retrieved for clan ID " + clanIDs[key] );
+            console.log( timestampPrefix() + characters.length + " characters found for " + memberRecords[i].destinyUserInfo.displayName );
+            console.log( timestampPrefix() + no + " of " + memberRecords.length + " clan members' info retrieved for clan ID " + clanIDs[key] + "\n" );
+            //console.log( clanMembersInfo );
           }
         }
       }
