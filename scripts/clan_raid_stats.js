@@ -43,14 +43,14 @@ getClanMembers()
 			//console.log( clanMembersInfo );
 			console.log(timestampPrefix() + "Performing step 3 of 4: Truncating table");
 
-			await pool.query("TRUNCATE TABLE clan_raid_report")
+			await pool.query("TRUNCATE TABLE clan_raid_stats")
 			.then(async function(){
 				console.log(timestampPrefix() + "Performing step 4 of 4: Inserting records");
 
 				for(var i=0; i<clanMembersInfo.length; i++) {
 					let member = clanMembersInfo[i];
 
-					await pool.query("INSERT INTO clan_raid_report SET ?", {
+					await pool.query("INSERT INTO clan_raid_stats SET ?", {
 						user_id: member.membershipId,
 						levi: member.raidCompletions.levi,
 						levip: member.raidCompletions.levip,

@@ -7,7 +7,7 @@ $(document).ready(function(){
       $('.roster-container').removeClass("spinner").html( rosterDataTable(data, charData) );
       $("#roster_table").addClass("bg-white text-dark");
 
-      let roster_table = $("#roster_table").DataTable({
+      var roster_table = $("#roster_table").DataTable({
         paging: true,
         fixedHeader: true,
         pageLength: 50,
@@ -54,15 +54,15 @@ function rosterDataTable(data, charData) {
   /* Data */
   for(var i=0; i<data.length; i++) {
 
-    let characters = charData.filter(function(character){
+    var characters = charData.filter(function(character){
       return character.user_id == data[i].destiny_id;
     });
 
-    let dataSortSearchStr = '';
-    let characterStr = '';
+    var dataSortSearchStr = '';
+    var characterStr = '';
 
     if( characters.length > 0  ) {
-      let memberCharacters = {
+      var memberCharacters = {
         Warlock: characters.filter(function(character){ return character.class == 'Warlock'; }),
         Hunter: characters.filter(function(character){ return character.class == 'Hunter'; }),
         Titan: characters.filter(function(character){ return character.class == 'Titan'; })

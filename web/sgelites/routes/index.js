@@ -6,7 +6,7 @@ var sitemap = sm.createSitemap ({
   hostname: 'https://sgelites.com',
   cacheTime: 600000,  // 600 sec cache period
   urls: [
-    { url: '/' },
+    { url: '/',  changefreq: 'daily',  priority: 0.7 },
     { url: '/roster',  changefreq: 'weekly',  priority: 0.7 },
     { url: '/events',  changefreq: 'daily',  priority: 0.7 },
     { url: '/leaderboards',  changefreq: 'daily',  priority: 0.7 },

@@ -14,7 +14,7 @@ $(document).ready(function(){
     // Raid Stats
     $("#raid-container").html( raidDataTable(data) );
     $("#raid_table").addClass("bg-white text-dark");
-    let raid_table = $("#raid_table").DataTable({
+    var raid_table = $("#raid_table").DataTable({
       paging: true,
       pageLength: 50,
       fixedHeader: false,
@@ -35,7 +35,7 @@ $(document).ready(function(){
     // PvE Stats
     $("#pve-container").html( pveDataTable(data) );
     $("#pve_table").addClass("bg-white text-dark");
-    let pve_table = $("#pve_table").DataTable({
+    var pve_table = $("#pve_table").DataTable({
       paging: true,
       pageLength: 50,
       fixedHeader: false,
@@ -56,7 +56,7 @@ $(document).ready(function(){
     // PvP Stats
     $("#pvp-container").html( pvpDataTable(data) );
     $("#pvp_table").addClass("bg-white text-dark");
-    let pvp_table = $("#pvp_table").DataTable({
+    var pvp_table = $("#pvp_table").DataTable({
       paging: true,
       pageLength: 50,
       fixedHeader: false,
@@ -77,7 +77,7 @@ $(document).ready(function(){
     // Weapon Stats
     $("#weapon-container").html( weaponDataTable(data) );
     $("#weapon_table").addClass("bg-white text-dark");
-    let weapon_table = $("#weapon_table").DataTable({
+    var weapon_table = $("#weapon_table").DataTable({
       paging: true,
       pageLength: 50,
       fixedHeader: false,
@@ -98,7 +98,7 @@ $(document).ready(function(){
     // Triumph
     $("#triumph-container").html( triumphDataTable(data) );
     $("#triumph_table").addClass("bg-white text-dark");
-    let triumph_table = $("#triumph_table").DataTable({
+    var triumph_table = $("#triumph_table").DataTable({
       paging: true,
       pageLength: 50,
       fixedHeader: false,
@@ -119,7 +119,7 @@ $(document).ready(function(){
     // Gambit
     $("#gambit-container").html( gambitDataTable(data) );
     $("#gambit_table").addClass("bg-white text-dark");
-    let gambit_table = $("#gambit_table").DataTable({
+    var gambit_table = $("#gambit_table").DataTable({
       paging: true,
       pageLength: 50,
       fixedHeader: false,
@@ -335,7 +335,7 @@ function badges(data) {
     });
   }
 
-  let badgeData = {
+  var badgeData = {
     pve: {},
     pvp: {},
     weapon: {},
@@ -619,7 +619,7 @@ function badges(data) {
     }
   }
 
-  let str = `
+  var str = `
   <div class="badge-container">
     <div class="row">
   `;
@@ -798,7 +798,7 @@ function raidDataTable(rows) {
   else
     rows = rows.raid;
 
-  let raids = {
+  var raids = {
     'Levi': 'levi',
     'Levi Pres.': 'levip',
     'EoW': 'eow',
@@ -846,7 +846,7 @@ function raidDataTable(rows) {
       <td class="text-left">`+rows[i].display_name+bnetId+`</td>
       <td class="text-left">`+rows[i].clan_no+`</td>`;
 
-    let activityCount = 0;
+    var activityCount = 0;
 
     Object.keys(raids).forEach(function(raid) {
       str += `<td class="text-right">`+rows[i][raids[raid]]+`</td>`;
@@ -960,7 +960,7 @@ function gambitDataTable(rows) {
     return n.toString();
   }
 
-  let infamyRanks = [
+  var infamyRanks = [
     'Guardian I',
     'Guardian II',
     'Guardian III',
@@ -1053,7 +1053,7 @@ function pvpDataTable(rows) {
   else
     rows = rows.pvp;
 
-  let valorRanks = [
+  var valorRanks = [
     'Guardian',
     'Brave',
     'Heroic',
@@ -1062,7 +1062,7 @@ function pvpDataTable(rows) {
     'Legend',
   ];
 
-  let gloryRanks = [
+  var gloryRanks = [
     'Guardian I',
     'Guardian II',
     'Guardian III',
@@ -1081,7 +1081,7 @@ function pvpDataTable(rows) {
     'Legend',
   ];
 
-  let infamyRanks = [
+  var infamyRanks = [
     'Guardian I',
     'Guardian II',
     'Guardian III',

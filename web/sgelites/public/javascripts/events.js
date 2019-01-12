@@ -16,7 +16,7 @@ function eventDatatable(events) {
     return 'No events have been scheduled.';
 
   /* Headers */
-  let str = `
+  var str = `
   <div class="table-responsive">
     <table id="events_table" class="display table table-striped">
       <thead>

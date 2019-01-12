@@ -94,7 +94,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
 
   if( eventName ) {
     message_id = reaction.message.id;
-    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? LIMIT 1", [message_id, serverID]).then(function(results){
+    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' LIMIT 1", [message_id, serverID]).then(function(results){
       return results[0].event_id;
     })
     .error(function(e){

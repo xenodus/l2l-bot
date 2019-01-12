@@ -9,14 +9,14 @@ $(document).ready(function(){
 
     $('#classPlaytime').removeClass('spinner');
 
-    let classPlaytimes = {
+    var classPlaytimes = {
       Warlock: charData.filter(function(char){ return char.class == 'Warlock'; }).map(user => Math.floor(user.minutesPlayedTotal / 60)).reduce((prev, next) => prev + next),
       Hunter: charData.filter(function(char){ return char.class == 'Hunter'; }).map(user => Math.floor(user.minutesPlayedTotal / 60)).reduce((prev, next) => prev + next),
       Titan: charData.filter(function(char){ return char.class == 'Titan'; }).map(user => Math.floor(user.minutesPlayedTotal / 60)).reduce((prev, next) => prev + next),
     };
 
-    let classPlaytimeCanvas = document.getElementById('classPlaytime').getContext('2d');
-    let classPlaytimePieChart = new Chart(classPlaytimeCanvas,{
+    var classPlaytimeCanvas = document.getElementById('classPlaytime').getContext('2d');
+    var classPlaytimePieChart = new Chart(classPlaytimeCanvas,{
         type: 'horizontalBar',
         data: {
           datasets: [{
@@ -60,7 +60,7 @@ $(document).ready(function(){
 
     $('#weapons').removeClass('spinner');
 
-    let keyMap = {
+    var keyMap = {
       'weaponKillsAutoRifle': 'Auto Rifle',
       'weaponKillsBow': 'Bow',
       'weaponKillsFusionRifle': 'Fusion Rifle',
@@ -77,15 +77,15 @@ $(document).ready(function(){
       'weaponKillsTraceRifle': 'Trace Rifle',
     };
 
-    let weaponKills = {};
-    let colors = [];
+    var weaponKills = {};
+    var colors = [];
     Object.keys(keyMap).forEach(function(key){
       weaponKills[key] = weaponData.map(user => Math.floor(user[key] / 1000) ).reduce((prev, next) => prev + next)
       colors.push( randomColor() );
     });
 
-    let weaponsCanvas = document.getElementById('weapons').getContext('2d');
-    let weaponsPieChart = new Chart(weaponsCanvas,{
+    var weaponsCanvas = document.getElementById('weapons').getContext('2d');
+    var weaponsPieChart = new Chart(weaponsCanvas,{
         type: 'horizontalBar',
         data: {
           datasets: [{
@@ -118,7 +118,7 @@ $(document).ready(function(){
 
     $('#raids').removeClass('spinner');
 
-    let raidMap = {
+    var raidMap = {
       levi: 'Leviathan',
       levip: 'Prestige Leviathan',
       eow: 'Eater of Worlds',
@@ -129,15 +129,15 @@ $(document).ready(function(){
       sotp: 'Scourge of the Past',
     };
 
-    let raidCompletions = {};
-    let colors = [];
+    var raidCompletions = {};
+    var colors = [];
     Object.keys(raidMap).forEach(function(key){
       raidCompletions[key] = raidData.map(user => user[key]).reduce((prev, next) => prev + next)
       colors.push( randomColor() );
     });
 
-    let raidCanvas = document.getElementById('raids').getContext('2d');
-    let raidPieChart = new Chart(raidCanvas,{
+    var raidCanvas = document.getElementById('raids').getContext('2d');
+    var raidPieChart = new Chart(raidCanvas,{
         type: 'horizontalBar',
         data: {
           datasets: [{
@@ -171,7 +171,7 @@ $(document).ready(function(){
 
     $('#lastOnline').removeClass('spinner');
 
-    let lastLogin = {
+    var lastLogin = {
       'Last Week': memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') <= 7 }).length,
       '2 Weeks Ago': memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 7 && moment().diff( moment(member.last_online) , 'days') <= 14 }).length,
       '3 Weeks Ago': memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 14 && moment().diff( moment(member.last_online) , 'days') <= 21 }).length,
@@ -181,13 +181,13 @@ $(document).ready(function(){
 
     console.log( memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 }) );
 
-    let colors = [];
+    var colors = [];
     for(var i=0; i<Object.keys(lastLogin).length; i++) {
       colors.push( randomColor() );
     }
 
-    let lastOnlineCanvas = document.getElementById('lastOnline').getContext('2d');
-    let lastOnlinePieChart = new Chart(lastOnlineCanvas,{
+    var lastOnlineCanvas = document.getElementById('lastOnline').getContext('2d');
+    var lastOnlinePieChart = new Chart(lastOnlineCanvas,{
         type: 'horizontalBar',
         data: {
           datasets: [{
