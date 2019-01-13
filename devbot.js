@@ -130,7 +130,10 @@ client.on('messageReactionAdd', async function(reaction, user) {
 
         if( user.id == creator_id || isAdmin ) {
           console.log("Sending event signup ping for message ID: " + message_id + " by: " + user.username);
-          raidEvent.pingEventSignups(eventID);
+
+          reaction.message.guild.fetchMember(user).then(function(guildMember){
+            raidEvent.pingEventSignups(eventID, guildMember);
+          });
         }
       }
     }
@@ -446,12 +449,22 @@ function getEventDatetimeString(eventName) {
 
 function isEventDatetimeValid(event_date_string) {
 
-  console.log( event_date_string );
-
   for(var key in eventDatetimeFormats) {
     if( moment(event_date_string, eventDatetimeFormats[key], true).isValid() )
       return moment( event_date_string, eventDatetimeFormats[key] ).format(moment().year()+'-MM-DD HH:mm:ss')
   }
+
+  // If no matches from strict match, check for no time specified
+  if( moment(event_date_string, 'D MMM', true).isValid() )
+    return moment( event_date_string, 'D MMM' ).format(moment().year()+'-MM-DD 23:59:59')
+
+  // If all else fails, non strict checks
+  /*
+  for(var key in eventDatetimeFormats) {
+    if( moment(event_date_string, eventDatetimeFormats[key]).isValid() )
+      return moment( event_date_string, eventDatetimeFormats[key] ).format(moment().year()+'-MM-DD HH:mm:ss')
+  }
+  */
 
   return false;
 }
@@ -1234,10 +1247,11 @@ function Event() {
   /******************************
      Ping Signups of Events
   *******************************/
-  self.pingEventSignups = function(eventID) {
+  self.pingEventSignups = function(eventID, author) {
     pool.query("SELECT * FROM event_signup LEFT JOIN event ON event_signup.event_id = event.event_id WHERE event_signup.event_id = ? AND event.server_id = ?", [eventID, serverID])
     .then(function(results){
       var rows = JSON.parse(JSON.stringify(results));
+      let pinger = author.nickname ? author.nickname : author.user.username;
 
       // For each sign up users
       for(var i = 0; i < rows.length; i++) {
@@ -1250,7 +1264,7 @@ function Event() {
             return creator;
           }).then(function(creator){
             client.fetchUser(signup_id).then(function(signup){
-              signup.send("This is an alert by " + creator + " or an admin regarding event, __" + event_name + "__");
+              signup.send("This is an alert by " + pinger + " / <@"+author.id+"> regarding event, __" + event_name + "__");
             });
           });
         }
