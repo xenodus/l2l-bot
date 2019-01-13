@@ -19,7 +19,7 @@ $(document).ready(function(){
     }
 
     if( members_online > 0 ) {
-      $('.main-container').prepend("<div class='text-white text-right mt-3 mr-3 members-online' style='letter-spacing: 1px;'><i class='fas fa-circle fa-sm mr-2 text-success'></i>"+members_online+" Members Online</div>");
+      $('.status-bar').append("<span><i class='fas fa-circle fa-sm mr-2 text-success'></i>"+members_online+" Members Online</span>").show();
     }
   });
 });

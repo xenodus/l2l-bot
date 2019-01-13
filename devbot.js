@@ -9,7 +9,13 @@ const Discord = require("discord.js");
 const client = new Discord.Client();
 const raidEvent = new Event();
 const interestList = new InterestList();
-const eventDatetimeFormat = 'DD MMM h:mmA';
+const eventDatetimeFormats = [
+  'D MMM HHmm', // military time
+  'D MMM h:mmA',
+  'D MMM h:mm A',
+  'D MMM hA',
+  'D MMM h A'
+];
 
 let isAdmin = false;
 let isClanMember = false;
@@ -56,8 +62,8 @@ client.on("ready", async function() {
   }, 30000);
 
   setInterval(function(){
-    raidEvent.reorder(); // reorder event channel every hour
-  }, 3600000);
+    raidEvent.reorder(); // reorder event channel every minute
+  }, 60000);
 });
 
 client.on("guildCreate", async function(guild) {
@@ -68,29 +74,28 @@ client.on("guildCreate", async function(guild) {
 
 client.on('messageReactionAdd', async function(reaction, user) {
 
+  // Checks before proceeding
   if ( reaction.message.guild === null ) return; // Disallow DM
   if ( user.bot ) return;
+  await channelCheck(reaction.message.guild);
+  if( reaction.message.channel.name != eventChannelName ) return;
+
+  serverID = reaction.message.guild.id;
+  eventID = 0;
+  maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
   console.log( timestampPrefix() + "Server ID: " + serverID );
   console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
 
-  serverID = reaction.message.guild.id;
-  maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
-
-  await channelCheck(reaction.message.guild);
-
-  if( reaction.message.channel.name != eventChannelName ) return;
-
   isAdmin = (reaction.message.member.roles.find(roles => roles.name === "Admin") || reaction.message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(user.id) || Object.keys(config.sherpaIDs).includes(user.id)) ? true : false;
   eventName = reaction.message.embeds[0].message.embeds[0].title ? reaction.message.embeds[0].message.embeds[0].title : "";
+  await raidEvent.autoExpireEvent();
 
   if( eventName ) {
     message_id = reaction.message.id;
-    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' LIMIT 1", [message_id, serverID]).then(function(results){
-      return results[0].event_id;
-    })
-    .error(function(e){
-      return 0;
+    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) LIMIT 1", [message_id, serverID]).then(function(results){
+      if( results.length > 0 )
+        return results[0].event_id;
     });
 
     if( eventID ) {
@@ -129,11 +134,14 @@ client.on('messageReactionAdd', async function(reaction, user) {
         }
       }
     }
+    else
+      raidEvent.reorder();
   }
 });
 
 client.on("message", async function(message) {
 
+  // Checks before proceeding
   if ( message.author.bot ) return;
   if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
@@ -428,11 +436,24 @@ function timestampPrefix() {
 }
 
 function getEventDatetimeString(eventName) {
-  return eventName.trim().split(/ +/g).slice(0,3).join(' ');
+  let indexOfTab = eventName.indexOf("[");
+
+  if( indexOfTab >= 0 )
+    return eventName.substring(0, indexOfTab-1);
+  else
+    return '';
 }
 
 function isEventDatetimeValid(event_date_string) {
-  return moment(event_date_string, eventDatetimeFormat).isValid();
+
+  console.log( event_date_string );
+
+  for(var key in eventDatetimeFormats) {
+    if( moment(event_date_string, eventDatetimeFormats[key], true).isValid() )
+      return moment( event_date_string, eventDatetimeFormats[key] ).format(moment().year()+'-MM-DD HH:mm:ss')
+  }
+
+  return false;
 }
 
 async function updateAllServers() {
@@ -761,6 +782,12 @@ function InterestList() {
 function Event() {
   var self = this;
 
+
+  self.autoExpireEvent = async function() {
+    // update any expired events
+    return await pool.query("UPDATE event SET message_id = '', status = 'deleted' WHERE server_id = ? AND status  = 'active' AND event_date + INTERVAL 3 HOUR < NOW()", [serverID]);
+  }
+
   /******************************
       Reorder Event Messages
   *******************************/
@@ -781,6 +808,9 @@ function Event() {
       current_event_messages_ids = current_event_messages_ids.sort();
 
       if( current_event_messages_ids.length > 0 ) {
+        // update any expired events
+        await self.autoExpireEvent();
+        // Get active events
         await pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
         .then(async function(results){
           var rows = JSON.parse(JSON.stringify(results));
@@ -826,7 +856,7 @@ function Event() {
                 msg.delete();
               });
             }
-          }
+          };
         })
       }
       else
@@ -844,11 +874,11 @@ function Event() {
 
       creator = member.nickname ? member.nickname : member.user.username;
       event_date_string = getEventDatetimeString(eventName);
-      event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+      event_date = isEventDatetimeValid(event_date_string) ? isEventDatetimeValid(event_date_string) : null;
 
       // Future Check
       if( event_date ) {
-        e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+        e = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).format(moment().year()+'-MM-DD');
 
         if( moment().diff( e, 'days' ) > 0 ) {
           event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
@@ -913,11 +943,11 @@ function Event() {
 
       if ( isAdmin || event.created_by == author.id ) {
         event_date_string = getEventDatetimeString(eventName);
-        event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+        event_date = isEventDatetimeValid(event_date_string) ? isEventDatetimeValid(event_date_string) : null;
 
       // Future Check
       if( event_date ) {
-        e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+        e = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).format(moment().year()+'-MM-DD');
 
         if( moment().diff( e, 'days' ) > 0 ) {
           event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')

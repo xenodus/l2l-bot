@@ -1,31 +1,59 @@
-html {
-  background: #212833 url("https://www.bungie.net/img/theme/destiny/bgs/clan/clanprofilebackground.jpg") no-repeat center center fixed;
-  -webkit-background-size: cover;
-  background-size: cover;
+.status-bar {
+  display: none;
+  background: rgba(0,0,0,0.7);
+  font-size: 12px;
+  line-height: 12px;
+  padding: 7px 15px 7px;
+  letter-spacing: 1px;
 }
-
 body {
-  font: 14px "Lato", "Lucida Grande", Helvetica, Arial, sans-serif;
+  font: 16px "Lato", "Lucida Grande", Helvetica, Arial, sans-serif;
   min-height: 100vh;
   color: #fff;
+}
+body:after {
+  /* background: #212833 url("https://www.bungie.net/img/theme/destiny/bgs/clan/clanprofilebackground.jpg") no-repeat center center fixed; */
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  z-index: -1;
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.9)), url('/images/traveler-bg.jpg');
+  background-position: center;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
 }
 a,
 div.bnet_id {
   color: #6495ED;
 }
 .main-container {
-  font-size: 14px;
-  line-height: 20px;
+  line-height: 22px;
 }
-nav small {
-  font-size: 14px;
+.navbar {
+  padding: 1rem;
 }
-nav .flag-icon {
-  margin-left: 8px;
+nav .clan-logo-container {
+  width: 40px;
+  height: 40px;
+}
+nav .clan-logo {
+  background-image: url('/images/clan-logo.png');
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+  border-radius: 25px;
+}
+nav .navbar-brand {
+  font-size: 26px;
 }
 .link-container i.fas,
 .link-container i.fab {
-  font-size: 140px;
+  font-size: 100px;
 }
 /*************************************
   Index
@@ -76,4 +104,31 @@ nav .flag-icon {
     transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
     -webkit-transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
   }
+}
+
+/* Extra small devices (portrait phones, less than 576px) */
+@media (max-width: 575.98px) {
+}
+
+/* Small devices (landscape phones, less than 768px) */
+@media (max-width: 767.98px) {
+}
+
+/* Medium devices (tablets, less than 992px) */
+@media (max-width: 991.98px) {
+  nav .navbar-collapse {
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.2)
+  }
+  .link-container i.fas,
+  .link-container i.fab {
+    font-size: 70px;
+  }
+  .home-container {
+    min-height: 0!important;
+  }
+}
+
+/* Large devices (desktops, less than 1200px) */
+@media (max-width: 1199.98px) {
 }

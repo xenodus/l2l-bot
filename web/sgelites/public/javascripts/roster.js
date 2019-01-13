@@ -9,7 +9,7 @@ $(document).ready(function(){
 
       var roster_table = $("#roster_table").DataTable({
         paging: true,
-        fixedHeader: true,
+        fixedHeader: false,
         pageLength: 50,
         "columnDefs": [ {
             "searchable": false,

@@ -94,7 +94,8 @@ client.on('messageReactionAdd', async function(reaction, user) {
 
   if( eventName ) {
     message_id = reaction.message.id;
-    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' LIMIT 1", [message_id, serverID]).then(function(results){
+    // await pool.query("UPDATE event SET status = 'deleted' WHERE server_id = ? AND status  = 'active' AND event_date + INTERVAL 3 HOUR < NOW()", [serverID]);
+    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) LIMIT 1", [message_id, serverID]).then(function(results){
       return results[0].event_id;
     })
     .error(function(e){

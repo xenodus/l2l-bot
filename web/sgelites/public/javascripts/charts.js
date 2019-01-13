@@ -206,7 +206,7 @@ $(document).ready(function(){
         options: {
           title: {
             display: true,
-            text: "Last Activity of "+memberData.length+" Clan Members",
+            text: "Last Login of Clan Members ("+memberData.length+" total)",
           },
           legend: {
             display: false
