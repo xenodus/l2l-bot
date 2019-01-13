@@ -1,4 +1,82 @@
 $(document).ready(function(){
+  $.get('/api/stats/online', function(onlineData){
+    onlineData = JSON.parse(onlineData);
+
+    $('#onlineHistory').removeClass('spinner');
+
+    var online_data = onlineData.map(function(date){ return date.no_online; });
+    var online_dates = onlineData.map(function(date){ return date.datetime });
+    var labels = onlineData.map(function(date){ return moment(date.datetime).format('ha'); });
+
+    var onlineHistoryCanvas = document.getElementById('onlineHistory').getContext('2d');
+    var onlineHistoryChart = new Chart(onlineHistoryCanvas,{
+        type: 'line',
+        data: {
+          datasets: [{
+              data: online_data,
+              backgroundColor: 'rgba(0,0,0,0)',
+              borderColor: '#36a2eb',
+              lineTension: 0,
+              borderWidth: 1,
+              pointBorderWidth: 2,
+              pointStyle: 'circle'
+          }],
+          labels: labels
+        },
+        options: {
+          layout: {
+            padding: {
+              left: 15,
+              right: 30,
+              bottom: 15,
+              top: 15
+            }
+          },
+          maintainAspectRatio: false,
+          title: {
+            display: true,
+            text: 'Clan Activity (Members Online)',
+          },
+          legend: {
+            display: false
+          },
+          scales: {
+            xAxes: [{
+              gridLines: {
+                display: false,
+                color: 'rgba(0,0,0,0.3)',
+              },
+              scaleLabel: {
+                display: true,
+                labelString: 'Time'
+              }
+            }],
+            yAxes: [{
+              gridLines: {
+                display: false,
+                color: 'rgba(0,0,0,0.3)',
+              },
+              scaleLabel: {
+                display: true,
+                labelString: 'Members Online'
+              }
+            }]
+          },
+          tooltips: {
+            displayColors: false,
+            callbacks: {
+              title: function(tooltipItem, data) {
+                return online_data[tooltipItem[0]['index']] + ' Players';
+              },
+              label: function(tooltipItem, data) {
+                return moment( online_dates[tooltipItem['index']] ).format('D MMM YYYY, ddd h A')
+              }
+            }
+          }
+        },
+    });
+  });
+
   $.get('/api/characters', function(charData){
 
     charData = JSON.parse(charData);
@@ -179,7 +257,7 @@ $(document).ready(function(){
       '> 4 Weeks Ago': memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 28 }).length,
     };
 
-    console.log( memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 }) );
+    // console.log( memberData.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 }) );
 
     var colors = [];
     for(var i=0; i<Object.keys(lastLogin).length; i++) {
@@ -215,7 +293,7 @@ $(document).ready(function(){
         }
     });
 
-    console.log( lastLogin );
+    // console.log( lastLogin );
   });
 });
 

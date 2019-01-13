@@ -9,20 +9,19 @@ const Discord = require("discord.js");
 const client = new Discord.Client();
 const raidEvent = new Event();
 const interestList = new InterestList();
-const pvpList = new PVPList();
-const axios = require('axios');
-const Traveler = require('the-traveler').default;
-const traveler = new Traveler({
-  apikey: config.bungieAPIKey,
-  userAgent: 'alvinyeoh', //used to identify your request to the API
-  debug: false
-});
-const eventDatetimeFormat = 'DD MMM h:mmA';
+const eventDatetimeFormats = [
+  'D MMM HHmm', // military time
+  'D MMM h:mmA',
+  'D MMM h:mm A',
+  'D MMM hA',
+  'D MMM h A'
+];
 
 let isAdmin = false;
 let isClanMember = false;
 let maxConfirmed = 6;
 let sgeServerID = '372462137651757066';
+let happyMealServerID = '480757578612342784';
 let raids = {
   'Levi': [],
   'PLevi': [],
@@ -40,10 +39,8 @@ let raids = {
 const channelCategoryName = "Looking for Group";
 const channelName = "raid_newbies_signup"; // no spaces all lower case
 const eventChannelName = "raid_lfg"; // no spaces all lower case
-//const pvpChannelName = "pvp_lfg"; // no spaces all lower case
 let channel;
 let eventChannel;
-//let pvpChannel;
 let serverID; // also known as guild id
 
 /******************************
@@ -65,8 +62,8 @@ client.on("ready", async function() {
   }, 30000);
 
   setInterval(function(){
-    raidEvent.reorder(); // reorder event channel every hour
-  }, 3600000);
+    raidEvent.reorder(); // reorder event channel every minute
+  }, 60000);
 });
 
 client.on("guildCreate", async function(guild) {
@@ -77,29 +74,28 @@ client.on("guildCreate", async function(guild) {
 
 client.on('messageReactionAdd', async function(reaction, user) {
 
+  // Checks before proceeding
   if ( reaction.message.guild === null ) return; // Disallow DM
   if ( user.bot ) return;
-
-  console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
+  await channelCheck(reaction.message.guild);
+  if( reaction.message.channel.name != eventChannelName ) return;
 
   serverID = reaction.message.guild.id;
+  eventID = 0;
   maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
-  await channelCheck(reaction.message.guild);
-
-  if( reaction.message.channel.name != eventChannelName ) return;
+  console.log( timestampPrefix() + "Server ID: " + serverID );
+  console.log( timestampPrefix() + reaction.emoji + " By: " + user.username + " on Message ID: " + reaction.message.id );
 
   isAdmin = (reaction.message.member.roles.find(roles => roles.name === "Admin") || reaction.message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(user.id) || Object.keys(config.sherpaIDs).includes(user.id)) ? true : false;
   eventName = reaction.message.embeds[0].message.embeds[0].title ? reaction.message.embeds[0].message.embeds[0].title : "";
+  await raidEvent.autoExpireEvent();
 
   if( eventName ) {
     message_id = reaction.message.id;
-    // await pool.query("UPDATE event SET status = 'deleted' WHERE server_id = ? AND status  = 'active' AND event_date + INTERVAL 3 HOUR < NOW()", [serverID]);
-    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date >= CURDATE() ) LIMIT 1", [message_id, serverID]).then(function(results){
-      return results[0].event_id;
-    })
-    .error(function(e){
-      return 0;
+    eventID = await pool.query("SELECT * FROM event WHERE message_id = ? AND server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) LIMIT 1", [message_id, serverID]).then(function(results){
+      if( results.length > 0 )
+        return results[0].event_id;
     });
 
     if( eventID ) {
@@ -134,19 +130,26 @@ client.on('messageReactionAdd', async function(reaction, user) {
 
         if( user.id == creator_id || isAdmin ) {
           console.log("Sending event signup ping for message ID: " + message_id + " by: " + user.username);
-          raidEvent.pingEventSignups(eventID);
+
+          reaction.message.guild.fetchMember(user).then(function(guildMember){
+            raidEvent.pingEventSignups(eventID, guildMember);
+          });
         }
       }
     }
+    else
+      raidEvent.reorder();
   }
 });
 
 client.on("message", async function(message) {
 
+  // Checks before proceeding
   if ( message.author.bot ) return;
   if ( message.channel.name != eventChannel.name && message.channel.name != channel.name ) return;
   if ( message.guild === null ) return; // Disallow DM
 
+  console.log( timestampPrefix() + "Server ID: " + serverID );
   console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
 
   message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
@@ -305,7 +308,7 @@ client.on("message", async function(message) {
 
     else if ( command === "clear" || command === "refresh" ) {
       if ( isAdmin ) {
-        raidEvent.getEvents();
+        raidEvent.getEvents(eventChannel);
       }
     }
   }
@@ -403,77 +406,10 @@ client.on("message", async function(message) {
 
     else if ( command === "show" || command === "clear" || command === "refresh" ) {
       if ( isAdmin ) {
-        interestList.getInterestList(message);
+        interestList.getInterestList(channel);
       }
     }
   }
-
-  /****************************
-        #pvp_lfg channel
-  ****************************/
-
-  /*
-  if( message.channel == pvpChannel ) {
-    if ( command === "pvp" ) {
-
-      switch ( args[0] ) {
-        case "sub":
-          if( args.length > 1 && message.mentions.users.first() ) {
-            let player = message.mentions.users.first();
-
-            message.guild.fetchMember(player).then(function(member){
-              pvpList.sub(member);
-            });
-          }
-          else
-            pvpList.sub(message.member);
-
-          pvpList.displayList().then(function(){
-            message.delete();
-          });
-          return;
-
-        case "unsub":
-          if( args.length > 1 && message.mentions.users.first() ) {
-            let player = message.mentions.users.first();
-
-            message.guild.fetchMember(player).then(function(member){
-              pvpList.unsub(member);
-            })
-          }
-          else
-            pvpList.unsub(message.member);
-
-          pvpList.displayList().then(function(){
-            message.delete();
-          });
-          return;
-
-        case "ping":
-          if( args.length > 1 ) {
-            let msg = args[1] ? args.slice(1, args.length).join(" ") : "";
-            pvpList.pingList(msg, message.member);
-          }
-
-          message.delete();
-          return;
-
-        case "detailed":
-          pvpList.displayList("detailed").then(function(){
-            message.delete();
-          });
-          return;
-
-        case "list":
-        default:
-          pvpList.displayList().then(function(){
-            message.delete();
-          });
-          return;
-      }
-    }
-  }
-  */
 
   if ( command === "food" ) {
     message.author.send( foodList() );
@@ -503,22 +439,46 @@ function timestampPrefix() {
 }
 
 function getEventDatetimeString(eventName) {
-  return eventName.trim().split(/ +/g).slice(0,3).join(' ');
+  let indexOfTab = eventName.indexOf("[");
+
+  if( indexOfTab >= 0 )
+    return eventName.substring(0, indexOfTab-1);
+  else
+    return '';
 }
 
 function isEventDatetimeValid(event_date_string) {
-  return moment(event_date_string, eventDatetimeFormat).isValid();
+
+  for(var key in eventDatetimeFormats) {
+    if( moment(event_date_string, eventDatetimeFormats[key], true).isValid() )
+      return moment( event_date_string, eventDatetimeFormats[key] ).format(moment().year()+'-MM-DD HH:mm:ss')
+  }
+
+  // If no matches from strict match, check for no time specified
+  if( moment(event_date_string, 'D MMM', true).isValid() )
+    return moment( event_date_string, 'D MMM' ).format(moment().year()+'-MM-DD 23:59:59')
+
+  // If all else fails, non strict checks
+  /*
+  for(var key in eventDatetimeFormats) {
+    if( moment(event_date_string, eventDatetimeFormats[key]).isValid() )
+      return moment( event_date_string, eventDatetimeFormats[key] ).format(moment().year()+'-MM-DD HH:mm:ss')
+  }
+  */
+
+  return false;
 }
 
 async function updateAllServers() {
   for( var guild of client.guilds.values() ) {
     serverID = guild.id;
-    channelCheck(guild);
 
-    setTimeout(async function() {
-      interestList.getInterestList();
-      raidEvent.getEvents();
-    }, 1000);
+    await channelCheck(guild).then(async function(channels){
+      if( channels.channel )
+        await interestList.getInterestList(channels.channel);
+      if( channels.eventChannel )
+        await raidEvent.getEvents(channels.eventChannel);
+    });
   }
 }
 
@@ -646,17 +606,19 @@ async function channelCheck(guild) {
     channelCategoryID = guild.channels.find(channel => channel.name == channelCategoryName && channel.type == "category").id;
 
   // Interest List Channel Check
-  let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
+  if( guild.id != happyMealServerID ) {
+    let channelExists = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID);
 
-  if( channelExists === null )
-    await guild.createChannel(channelName, "text").then(async function(newChannel){
-      newChannel.setParent( channelCategoryID );
-      channelID = newChannel.id;
-      channel = await client.channels.get(channelID);
-    });
-  else {
-    channelID = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
-    channel = client.channels.get(channelID);
+    if( channelExists === null )
+      await guild.createChannel(channelName, "text").then(async function(newChannel){
+        newChannel.setParent( channelCategoryID );
+        channelID = newChannel.id;
+        channel = await client.channels.get(channelID);
+      });
+    else {
+      channelID = guild.channels.find(channel => channel.name == channelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
+      channel = client.channels.get(channelID);
+    }
   }
 
   // Event Channel Check
@@ -673,245 +635,20 @@ async function channelCheck(guild) {
     eventChannel = client.channels.get(eventChannelID);
   }
 
-  // PvP Channel Check
-  /*
-  let pvpChannelExists = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID);
-
-  if( pvpChannelExists === null )
-    await guild.createChannel(pvpChannelName, "text").then(async function(newChannel){
-      newChannel.setParent( channelCategoryID );
-      pvpChannelID = newChannel.id;
-      pvpChannel = await client.channels.get(pvpChannelID);
-    });
-  else {
-    pvpChannelID = guild.channels.find(channel => channel.name == pvpChannelName && channel.type == "text" && channel.parentID == channelCategoryID).id;
-    pvpChannel = client.channels.get(pvpChannelID);
+  return {
+    channel: channel,
+    eventChannel: eventChannel
   }
-  */
 }
 
 /******************************
           Objects
 *******************************/
 
-function PVPList() {
-  var self = this;
-
-  self.sub = async function(player, comment='') {
-    let username = player.nickname ? player.nickname : player.user.username;
-
-    await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id])
-    .then(async function(r){
-      await pool.query("INSERT INTO pvp_interest_list SET ?", {server_id: serverID, username: username, user_id: player.id, date_added: moment().format('YYYY-MM-DD')})
-      .then(function(r){
-        console.log( timestampPrefix() + username + " subbed for PVP List" );
-      });
-    });
-  }
-
-  self.unsub = async function(player, comment='') {
-    let username = player.nickname ? player.nickname : player.user.username;
-    let user_id = player.id;
-
-    await pool.query("DELETE FROM pvp_interest_list WHERE server_id = ? AND user_id = ?", [serverID, player.id]).then(function(r){
-      console.log( timestampPrefix() + username + " unsubbed from PVP List" );
-    });
-  }
-
-  self.displayList = async function(type='simple') {
-    await self.clearBotMessages(pvpChannel).then(function(){
-      pvpChannel.startTyping();
-      self.getList(type).then(function(){
-        pvpChannel.stopTyping();
-      });
-    })
-  }
-
-  self.clearBotMessages = async function(channel) {
-    let c = channel;
-
-    await channel.fetchMessages({limit: 99}).then(function(messages){
-      messages = messages.filter(m => { return m.author.bot == true && (m.embeds.length == 0 || m.embeds[0].author.name.includes('PvP Interest List')) });
-      c.bulkDelete(messages);
-    })
-    .catch(function(e){
-      console.log(e);
-    });
-  }
-
-  self.getList = async function(type="simple") {
-    await pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID]).then(async function(results){
-      var rows = JSON.parse(JSON.stringify(results));
-
-      if( rows.length > 0 ) {
-
-        if(type==='simple') {
-
-          let playersName = '';
-
-          for ( var i=0; i<rows.length; i++ ) {
-            let username = rows[i].username;
-            playersName += "• `" + username+"`\n";
-          }
-
-          var richEmbed = new Discord.RichEmbed()
-            .setColor("#DC143C")
-            .setAuthor("PvP Interest List (Simple)", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
-            .setDescription(playersName)
-            .setTimestamp();
-
-          richEmbed.addField("\u200b\nCommands", "`Show list - !pvp or !pvp detailed\nSub - !pvp sub or !pvp sub @user to sub someone\nUnsub - !pvp unsub or !pvp unsub @user to unsub someone\nPing list - !pvp ping your message here`");
-          console.log( timestampPrefix() + "Displaying Detailed PVP List" );
-          await pvpChannel.send(richEmbed);
-        }
-        else {
-          await self.getPVPStats(rows).then(async function(data){
-            var richEmbed = new Discord.RichEmbed()
-              .setColor("#DC143C")
-              .setAuthor("PvP Interest List (Detailed)", "https://pbs.twimg.com/media/DL5Aj0HX4AgvJMv.jpg")
-              .setTimestamp();
-
-            let playersName = '';
-            let playersGlory = '';
-            let playersStat = '';
-
-            if( data.length > 0 ) {
-              for( var i=0;i<data.length;i++ ) {
-                let description = '';
-                description += data[i].glory !== '' ? '**Glory:** ' + data[i].glory+'\n' : '';
-                description += (data[i].kd !== '' && data[i].kad !== '') ? '**KD:** ' + data[i].kd +' **KAD:** ' + data[i].kad + '\n' : '';
-                description += description === '' ? 'n/a' : '';
-
-                richEmbed.addField(data[i].username, description, true);
-
-                // Fill empty columns
-                if( i+1 == data.length ) {
-                  let emptyColumn = 3 - (data.length % 3);
-                  if( emptyColumn > 0 ) {
-                    while( emptyColumn != 0 ) {
-                      richEmbed.addField("\u200b", "\u200b", true);
-                      emptyColumn--;
-                    }
-                  }
-                }
-
-                playersName += data[i].username + '\n';
-                playersGlory += data[i].glory !== '' ? 'Glory: ' + data[i].glory+'\n' : '-\n';
-                playersStat += (data[i].kd === '' || data[i].kd === '') ? '-\n' : data[i].kd + ' / ' + data[i].kad + '\n';
-              }
-            }
-
-            richEmbed.addField("\u200b\nCommands", "`Show list - !pvp or !pvp detailed\nSub - !pvp sub or !pvp sub @user to sub someone\nUnsub - !pvp unsub or !pvp unsub @user to unsub someone\nPing list - !pvp ping your message here`");
-            console.log( timestampPrefix() + "Displaying Detailed PVP List" );
-            await pvpChannel.send(richEmbed);
-          });
-        }
-      }
-      else {
-        await pvpChannel.send("Nobody is on the PVP interest list :slight_frown:");
-      }
-    })
-    .catch(function(e){
-      console.log(e);
-    });
-    return;
-  }
-
-  self.getPVPStats = async function(rows) {
-    const glory_hash = 2000925172; // competitive
-    const valor_hash = 3882308435; // quickplay
-    const infamy_hash = 2772425241; // gambit
-    const membershipType = 4;
-
-    let data = [];
-
-    for ( var i=0; i<rows.length; i++ ) {
-      let username = rows[i].username;
-      let userID = rows[i].user_id;
-      let vPt = '';
-      let gPt = '';
-      let iPt = '';
-      let kad = '';
-      let kda = '';
-      let kd = '';
-      let lastLogin = '';
-
-      await traveler.searchDestinyPlayer(membershipType, encodeURIComponent(username)).then(async function(response){
-
-        if( response.Response[0] && response.Response[0].membershipId ) {
-          let membershipId = response.Response[0].membershipId;
-
-          await traveler.getProfile(membershipType, membershipId, {components: ['100', '202']}).then(async function(r){
-            if( r.Response.characterProgressions.data && await Object.keys(r.Response.characterProgressions.data).length > 0 ) {
-              let characterID = await Object.keys(r.Response.characterProgressions.data).shift();
-
-              await axios.get('https://www.bungie.net/Platform/Destiny2/'+membershipType+'/Account/'+membershipId+'/Stats/', { headers: { 'X-API-Key': config.bungieAPIKey } })
-              .then(async function(res){
-                if( res.status == 200 ) {
-                  kad = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.efficiency.basic.displayValue;
-                  kda = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsAssists.basic.displayValue;
-                  kd = await res.data.Response.mergedAllCharacters.results.allPvP.allTime.killsDeathsRatio.basic.displayValue;
-                }
-              })
-              .catch(function(e){
-                console.log(e);
-              });
-
-              iPt = await r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[infamy_hash].currentProgress : 0;
-              vPt = await r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[valor_hash].currentProgress : 0;
-              gPt = await r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress ? r.Response.characterProgressions.data[characterID].progressions[glory_hash].currentProgress : 0;
-              lastLogin = r.Response.profile.data.dateLastPlayed;
-              lastLogin = moment(lastLogin.substr(0,10), "YYYY-MM-DD").isValid() ? moment(lastLogin.substr(0,10), "YYYY-MM-DD").format("D MMM YYYY") : '';
-            }
-          });
-        }
-      });
-
-      data.push({
-        username: username,
-        kda: kda,
-        kad: kad,
-        kd: kd,
-        glory: gPt,
-        valor: vPt,
-        infamy: iPt,
-        lastLogin: lastLogin
-      });
-    }
-
-    return data;
-  }
-
-  self.pingList = function(msg, creator) {
-    pool.query("SELECT * FROM pvp_interest_list WHERE server_id = ? ORDER BY username ASC", [serverID]).then(function(results){
-      let playerIDs = '';
-      var rows = JSON.parse(JSON.stringify(results));
-
-      if( rows.length > 0 ) {
-        for(var i=0;i<rows.length;i++) {
-          playerIDs += "<@!"+rows[i].user_id+"> ";
-        }
-
-        let creator_name = creator.nickname ? creator.nickname : creator.user.username;
-
-        var richEmbed = new Discord.RichEmbed()
-          .setColor("#DC143C")
-          .setAuthor(creator_name, creator.user.avatarURL)
-          .setDescription(msg)
-          .setTimestamp();
-
-        richEmbed.addField(":wave:", playerIDs);
-
-        pvpChannel.send(richEmbed);
-      }
-    });
-  }
-}
-
 function InterestList() {
   var self = this;
 
-  self.getInterestList = function() {
+  self.getInterestList = async function(channel) {
 
     raids = {
       'Levi': [],
@@ -923,7 +660,7 @@ function InterestList() {
       'Scourge': [],
     };
 
-    pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [serverID])
+    await pool.query("SELECT * FROM interest_list WHERE server_id = ? ORDER BY FIELD(raid, 'levi', 'plevi', 'eow', 'sos', 'wish', 'riven', 'scourge')", [channel.guild.id])
     .then(function(results){
 
       var rows = JSON.parse(JSON.stringify(results));
@@ -1019,7 +756,7 @@ function InterestList() {
             richEmbed.setURL(config.raidGuides[raid]);
 
           if( message_id == '' ) {
-            self.getInterestList();
+            self.getInterestList(channel);
           }
           else {
             channel.fetchMessage(message_id).then(function(message){
@@ -1058,6 +795,12 @@ function InterestList() {
 function Event() {
   var self = this;
 
+
+  self.autoExpireEvent = async function() {
+    // update any expired events
+    return await pool.query("UPDATE event SET message_id = '', status = 'deleted' WHERE server_id = ? AND status  = 'active' AND event_date + INTERVAL 3 HOUR < NOW()", [serverID]);
+  }
+
   /******************************
       Reorder Event Messages
   *******************************/
@@ -1078,6 +821,9 @@ function Event() {
       current_event_messages_ids = current_event_messages_ids.sort();
 
       if( current_event_messages_ids.length > 0 ) {
+        // update any expired events
+        await self.autoExpireEvent();
+        // Get active events
         await pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
         .then(async function(results){
           var rows = JSON.parse(JSON.stringify(results));
@@ -1123,7 +869,7 @@ function Event() {
                 msg.delete();
               });
             }
-          }
+          };
         })
       }
       else
@@ -1141,11 +887,11 @@ function Event() {
 
       creator = member.nickname ? member.nickname : member.user.username;
       event_date_string = getEventDatetimeString(eventName);
-      event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+      event_date = isEventDatetimeValid(event_date_string) ? isEventDatetimeValid(event_date_string) : null;
 
       // Future Check
       if( event_date ) {
-        e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+        e = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).format(moment().year()+'-MM-DD');
 
         if( moment().diff( e, 'days' ) > 0 ) {
           event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
@@ -1210,11 +956,11 @@ function Event() {
 
       if ( isAdmin || event.created_by == author.id ) {
         event_date_string = getEventDatetimeString(eventName);
-        event_date = isEventDatetimeValid(event_date_string) ? moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD HH:mm:ss') : null;
+        event_date = isEventDatetimeValid(event_date_string) ? isEventDatetimeValid(event_date_string) : null;
 
       // Future Check
       if( event_date ) {
-        e = moment( event_date_string, eventDatetimeFormat ).format(moment().year()+'-MM-DD');
+        e = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).format(moment().year()+'-MM-DD');
 
         if( moment().diff( e, 'days' ) > 0 ) {
           event_date = moment( event_date, 'YYYY-MM-DD HH:mm:ss' ).add(1, 'years').format('YYYY-MM-DD HH:mm:ss')
@@ -1263,7 +1009,7 @@ function Event() {
         Get & Refresh Event
   *******************************/
 
-  self.getEvents = function() {
+  self.getEvents = async function(eventChannel) {
 
     clear(eventChannel);
 
@@ -1280,7 +1026,7 @@ function Event() {
     eventChannel.send( "If you're unable to see anything in this channel, make sure User Settings > Text & Images > Link Preview is checked." );
     eventChannel.send( richEmbed );
 
-    pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
+    pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [eventChannel.guild.id])
     .then(async function(results){
 
       var rows = JSON.parse(JSON.stringify(results));
@@ -1294,11 +1040,9 @@ function Event() {
 
           eventInfo = self.getEventInfo(event, results);
 
-          console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + ' "' + event.event_name + '" By: ' + event.created_by_username );
+          console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + '\n"' + event.event_name + '" by: ' + event.created_by_username + " for Server ID: " + eventChannel.guild.id + "\n" );
 
           await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
-
-          console.log( timestampPrefix() + 'Message ID: ' + message.id );
 
             if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
               await message.react('🆗');
@@ -1503,10 +1247,11 @@ function Event() {
   /******************************
      Ping Signups of Events
   *******************************/
-  self.pingEventSignups = function(eventID) {
+  self.pingEventSignups = function(eventID, author) {
     pool.query("SELECT * FROM event_signup LEFT JOIN event ON event_signup.event_id = event.event_id WHERE event_signup.event_id = ? AND event.server_id = ?", [eventID, serverID])
     .then(function(results){
       var rows = JSON.parse(JSON.stringify(results));
+      let pinger = author.nickname ? author.nickname : author.user.username;
 
       // For each sign up users
       for(var i = 0; i < rows.length; i++) {
@@ -1519,7 +1264,7 @@ function Event() {
             return creator;
           }).then(function(creator){
             client.fetchUser(signup_id).then(function(signup){
-              signup.send("This is an alert by " + creator + " or an admin regarding event, __" + event_name + "__");
+              signup.send("This is an alert by " + pinger + " / <@"+author.id+"> regarding event, __" + event_name + "__");
             });
           });
         }
