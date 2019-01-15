@@ -59,29 +59,6 @@ To unsub, `!unsub levi/plevi/eow/sos/wish/riven/scourge`. If you've change your 
 	!unsub levi
 
 
-## PvP Interest List
-
-**Subscribe**
-
-	!pvp sub
-
-**Unsubscribe**
-
-	!pvp unsub
-
-**Ping list with message**
-
-	!pvp ping LF1M Comp
-
-**Show simple list**
-
-	!pvp
-
-**Show detailed list with stats**
-
-	!pvp detailed
-
-
 ## Screenshots
 
 **An event listing**
@@ -91,15 +68,6 @@ To unsub, `!unsub levi/plevi/eow/sos/wish/riven/scourge`. If you've change your 
 **Newbie learning list**
 
 ![Newbie-List](https://alvinyeoh.com/destiny/img/bot-newbie-sample.png "Newbie List")
-
-**PvP interest list (Simple)**
-
-![PvP-List](https://alvinyeoh.com/destiny/img/bot-pvp-sample.png "PvP List")
-
-**PvP message ping**
-
-![PvP-ping](https://alvinyeoh.com/destiny/img/bot-pvpping-sample.png "PvP Ping")
-
 
 ## Authors
 

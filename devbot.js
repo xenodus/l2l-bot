@@ -858,7 +858,7 @@ function Event() {
                 .then(async function(results){
                   eventInfo = self.getEventInfo(event, results);
 
-                  await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+                  await eChannel.send( eventInfo.richEmbed ).then(async function(message){
 
                     await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
 
