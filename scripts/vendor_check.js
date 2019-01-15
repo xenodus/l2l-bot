@@ -90,6 +90,8 @@ getRefreshToken().then(function(accessToken){
       saleItems[key] = [];
     });
 
+    var no = 0;
+
     for(var vendor in saleItemsHash) {
       for(var i=0; i<saleItemsHash[vendor].length; i++) {
         let itemHash = saleItemsHash[ vendor ][i].hash;
@@ -125,9 +127,19 @@ getRefreshToken().then(function(accessToken){
         .catch(function(e){
           console.log("Error Code: " + e.errno + " >>> " + e.sqlMessage);
         });
+
+        no++;
       }
     }
 
+    if( no > 0 ) {
+      await pool.query("DELETE FROM vendor_sales WHERE date_added != ?", [moment().format('YYYY-MM-DD H:00:00')])
+      .catch(function(e){
+        console.log("Error Code: " + e.errno + " >>> " + e.sqlMessage);
+      });
+    }
+
+    console.log( no + " items inserted." );
     // console.log( saleItems['Petra Venj'] );
 
     // Bye!
