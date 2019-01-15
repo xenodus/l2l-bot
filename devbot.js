@@ -10,11 +10,11 @@ const client = new Discord.Client();
 const raidEvent = new Event();
 const interestList = new InterestList();
 const eventDatetimeFormats = [
-  'D MMM HHmm', // military time
-  'D MMM h:mmA',
-  'D MMM h:mm A',
-  'D MMM hA',
-  'D MMM h A'
+  'D MMM HHmm', // 1730
+  'D MMM h:mmA', // 5:30PM
+  'D MMM h:mm A', // 5:30 PM
+  'D MMM hA', // 5PM
+  'D MMM h A'// 5 PM
 ];
 
 let isAdmin = false;
@@ -58,11 +58,28 @@ client.on("ready", async function() {
   client.user.setPresence({ game: { name: 'Destiny 2', type: "playing"}});
 
   setInterval(function(){
-    updateBotStatus();
+    if( client.guilds.size > 0 ) {
+      client.guilds.forEach(function(guild){
+        if( guild.available ) {
+          channelCheck(guild).then(function(channels){
+            updateBotStatus(channels.eventChannel);
+          });
+        }
+      })
+    }
   }, 30000);
 
+  // Reorder every server's events occasionally
   setInterval(function(){
-    raidEvent.reorder(); // reorder event channel every minute
+    if( client.guilds.size > 0 ) {
+      client.guilds.forEach(function(guild){
+        if( guild.available ) {
+          channelCheck(guild).then(function(channels){
+            raidEvent.reorder(channels.eventChannel);
+          });
+        }
+      })
+    }
   }, 60000);
 });
 
@@ -89,7 +106,8 @@ client.on('messageReactionAdd', async function(reaction, user) {
 
   isAdmin = (reaction.message.member.roles.find(roles => roles.name === "Admin") || reaction.message.member.roles.find(roles => roles.name === "Clan Mods") || Object.keys(config.adminIDs).includes(user.id) || Object.keys(config.sherpaIDs).includes(user.id)) ? true : false;
   eventName = reaction.message.embeds[0].message.embeds[0].title ? reaction.message.embeds[0].message.embeds[0].title : "";
-  await raidEvent.autoExpireEvent();
+
+  isAdmin = (serverID == happyMealServerID) ? true : isAdmin;
 
   if( eventName ) {
     message_id = reaction.message.id;
@@ -138,7 +156,7 @@ client.on('messageReactionAdd', async function(reaction, user) {
       }
     }
     else
-      raidEvent.reorder();
+      raidEvent.reorder(eventChannel);
   }
 });
 
@@ -158,6 +176,8 @@ client.on("message", async function(message) {
   isClanMember = (message.member.roles.find(roles => roles.name === "Admin") || message.member.roles.find(roles => roles.name === "Clan Mods") || message.member.roles.find(roles => roles.name === "Clan 1") || message.member.roles.find(roles => roles.name === "Clan 2")) ? true : false;
   serverID = message.guild.id;
   maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
+
+  isAdmin = (serverID == happyMealServerID) ? true : isAdmin;
 
   await channelCheck(message.guild);
 
@@ -302,7 +322,7 @@ client.on("message", async function(message) {
 
     else if ( command === "reorder" ) {
       if ( isAdmin ) {
-        raidEvent.reorder();
+        raidEvent.reorder(eventChannel);
       }
     }
 
@@ -573,8 +593,8 @@ function foodList() {
       Bot Status Message - Fetching random online member
 ***************************************************************/
 
-function updateBotStatus() {
-  eventChannel.guild.fetchMembers().then(function(guild){
+function updateBotStatus(eChannel) {
+  eChannel.guild.fetchMembers().then(function(guild){
     members = guild.members
     .filter(members => { return members.presence.status === 'online' && members.user.bot === false })
     .map(member => { return { nickname: member.nickname, username: member.user.username }});
@@ -798,18 +818,17 @@ function Event() {
 
   self.autoExpireEvent = async function() {
     // update any expired events
-    return await pool.query("UPDATE event SET message_id = '', status = 'deleted' WHERE server_id = ? AND status  = 'active' AND event_date + INTERVAL 3 HOUR < NOW()", [serverID]);
+    return await pool.query("UPDATE event SET message_id = '', status = 'deleted' WHERE status  = 'active' AND event_date + INTERVAL 3 HOUR < NOW()");
   }
 
   /******************************
-      Reorder Event Messages
+    Resend Missing Event Messages
   *******************************/
 
-  self.reorder = async function() {
-    console.log(timestampPrefix() + "Reordering events channel");
+  self.detectMissing = async function(eChannel) {
+    console.log(timestampPrefix() + "Checking for missing events for server: " + eChannel.guild.name);
 
-    await eventChannel.fetchMessages().then(async function(messages){
-
+    await eChannel.fetchMessages().then(async function(messages){
       let current_event_messages = messages.filter(function(msg){
         return msg.embeds.length > 0 && msg.embeds[0].title && msg.embeds[0].title.includes('Event ID:')
       });
@@ -818,63 +837,131 @@ function Event() {
         return msg.id;
       });
 
-      current_event_messages_ids = current_event_messages_ids.sort();
-
       if( current_event_messages_ids.length > 0 ) {
-        // update any expired events
-        await self.autoExpireEvent();
-        // Get active events
-        await pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [serverID])
+        await pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [eChannel.guild.id])
         .then(async function(results){
+
           var rows = JSON.parse(JSON.stringify(results));
 
-          for(var i = 0; i < rows.length; i++) {
+          if( rows.length > 0 && rows.length > current_event_messages_ids.length ) {
 
-            let event = rows[i];
+            for( var i=0; i<rows.length; i++ ) {
 
-            await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
-            .then(async function(results){
-              eventInfo = self.getEventInfo(event, results);
-              curr_event_message = current_event_messages.filter(e => { return e.id === event.message_id }).values().next().value;
-              curr_event_message_id_to_edit = current_event_messages_ids.shift();
+              let event = rows[i];
 
-              if( curr_event_message_id_to_edit ) {
-                await eventChannel.fetchMessage(curr_event_message_id_to_edit)
-                .then(async function(msg){
-                  if( msg.embeds[0].title != eventInfo.richEmbed.title ){
-                    console.log( timestampPrefix() + "Reordered event ID: " + event.event_id + " from message ID: " + event.message_id + " to " + curr_event_message_id_to_edit );
-                    await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [curr_event_message_id_to_edit, event.event_id]);
+              if( current_event_messages_ids.includes( event.message_id ) == false ) {
 
-                    msg.edit( eventInfo.richEmbed )
-                    .then(async function(message){
-                      await message.clearReactions().then(async function(message){
-                        if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
-                          await message.react('🆗');
-                        await message.react('🤔');
-                        await message.react('⛔');
-                      });
-                    });
-                  }
+                console.log( timestampPrefix() + 'Event ' + event.id + " not found for server: " + eChannel.guild.name);
+
+                // If event in DB not found in channel - create it
+                await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+                .then(async function(results){
+                  eventInfo = self.getEventInfo(event, results);
+
+                  await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
+
+                    await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [message.id, event.event_id]);
+
+                    if( eventInfo.confirmedCount <= maxConfirmed )
+                      await message.react('🆗');
+                    await message.react('🤔');
+                    await message.react('⛔');
+                  });
                 });
               }
-            });
+            }
           }
+        });
+      }
+    });
+  }
 
-          // delete any ids that remains
-          if( current_event_messages_ids.length > 0 ) {
-            for(var i=0;i<current_event_messages_ids.length;i++) {
-              await eventChannel.fetchMessage(current_event_messages_ids[i])
-              .then(async function(msg){
-                console.log( timestampPrefix() + "Deleting message ID: " + current_event_messages_ids[i] + " with title: " + msg.embeds[0].title );
-                msg.delete();
+  /******************************
+      Reorder Event Messages
+  *******************************/
+
+  self.reorder = async function(eChannel) {
+
+    await self.detectMissing(eChannel).then(async function(){
+      console.log(timestampPrefix() + "Reordering events channel for server: " + eChannel.guild.name);
+
+      await eChannel.fetchMessages().then(async function(messages){
+
+        let current_event_messages = messages.filter(function(msg){
+          return msg.embeds.length > 0 && msg.embeds[0].title && msg.embeds[0].title.includes('Event ID:')
+        });
+
+        let current_event_messages_ids = current_event_messages.map(function(msg){
+          return msg.id;
+        });
+
+        current_event_messages_ids = current_event_messages_ids.sort();
+
+        if( current_event_messages_ids.length > 0 ) {
+          // Get active events
+          await pool.query("SELECT * FROM event WHERE server_id = ? AND status = 'active' AND ( event_date IS NULL OR event_date + INTERVAL 3 HOUR >= NOW() ) ORDER BY event_date IS NULL DESC, event_date ASC", [eChannel.guild.id])
+          .then(async function(results){
+            var rows = JSON.parse(JSON.stringify(results));
+
+            for(var i = 0; i < rows.length; i++) {
+
+              let event = rows[i];
+
+              await pool.query("SELECT * FROM event_signup LEFT JOIN event on event_signup.event_id = event.event_id WHERE event_signup.event_id = ? ORDER BY event_signup.date_added ASC", [event.event_id])
+              .then(async function(results){
+                eventInfo = self.getEventInfo(event, results);
+                curr_event_message = current_event_messages.filter(e => { return e.id === event.message_id }).values().next().value;
+                curr_event_message_id_to_edit = current_event_messages_ids.shift();
+
+                if( curr_event_message_id_to_edit ) {
+                  await eChannel.fetchMessage(curr_event_message_id_to_edit)
+                  .then(async function(msg){
+
+                    if( msg.embeds[0].title != eventInfo.richEmbed.title ){
+                      console.log( timestampPrefix() + "Reordered event ID: " + event.event_id + " from message ID: " + event.message_id + " to " + curr_event_message_id_to_edit + " for server: " + eChannel.guild.name);
+                      await pool.query("UPDATE event SET message_id = ? WHERE event_id = ?", [curr_event_message_id_to_edit, event.event_id]);
+
+                      msg.edit( eventInfo.richEmbed )
+                      .then(async function(message){
+                        await message.clearReactions().then(async function(message){
+
+                          maxConfirmed = (eChannel.guild.id == sgeServerID) ? 6 : 999;
+
+                          if( results.filter(row => row.type == "confirmed").length < maxConfirmed )
+                            await message.react('🆗');
+                          await message.react('🤔');
+                          await message.react('⛔');
+                        });
+                      });
+                    }
+                  });
+                }
               });
             }
-          };
-        })
-      }
-      else
-        console.log( timestampPrefix() + "No active events to reorder" );
-    });
+
+            // delete any ids that remains
+            if( current_event_messages_ids.length > 0 ) {
+              for(var i=0;i<current_event_messages_ids.length;i++) {
+                await eChannel.fetchMessage(current_event_messages_ids[i])
+                .then(async function(msg){
+                  console.log( timestampPrefix() + "Deleting message ID: " + current_event_messages_ids[i] + " with title: " + msg.embeds[0].title );
+                  msg.delete();
+                })
+                .catch(function(e){
+                  console.log(e);
+                });
+              }
+            };
+          })
+        }
+        else
+          console.log( timestampPrefix() + "No active events to reorder" );
+
+        // update any expired events
+        await self.autoExpireEvent();
+        console.log(timestampPrefix() + "Finished reordering events channel for server: " + eChannel.guild.name);
+      });
+    })
   }
 
   /******************************
@@ -937,7 +1024,7 @@ function Event() {
         });
       });
     }).then(function(){
-      self.reorder();
+      self.reorder(eventChannel);
     });
   };
 
@@ -974,7 +1061,7 @@ function Event() {
     }).then(function(){
       self.updateEventMessage(eventID);
     }).then(function(){
-      self.reorder();
+      self.reorder(eventChannel);
     });
   }
 
@@ -1040,7 +1127,7 @@ function Event() {
 
           eventInfo = self.getEventInfo(event, results);
 
-          console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + '\n"' + event.event_name + '" by: ' + event.created_by_username + " for Server ID: " + eventChannel.guild.id + "\n" );
+          console.log( timestampPrefix() + 'Printing Event ID: ' + event.event_id + ' - ' + event.event_name + '" by: ' + event.created_by_username + " for Server: " + eventChannel.guild.name );
 
           await eventChannel.send( eventInfo.richEmbed ).then(async function(message){
 

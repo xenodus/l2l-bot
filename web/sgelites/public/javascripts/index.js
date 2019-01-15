@@ -68,7 +68,7 @@ $(document).ready(function(){
             displayColors: false,
             callbacks: {
               title: function(tooltipItem, data) {
-                return online_data[tooltipItem[0]['index']] + ' Players';
+                return online_data[tooltipItem[0]['index']] + ' Members';
               },
               label: function(tooltipItem, data) {
                 return moment( online_dates[tooltipItem['index']] ).format('D MMM YYYY, ddd h A')

@@ -26,7 +26,7 @@ console.log(timestampPrefix() + "Performing step 1 of 4: Get Clan Members");
 
 getClanMembers(clanIDs)
 .then(async function(clanMembersInfo){
-  if( clanMembersInfo.length > 0 ) {
+  if( clanMembersInfo.length > 3 ) {
     console.log(timestampPrefix() + "Performing step 2 of 3: Truncating table");
 
     // destiny_id = user_id = membershipId
