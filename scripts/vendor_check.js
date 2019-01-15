@@ -34,18 +34,9 @@ const vendorHash = {
   'Lord Saladin': '895295461',
   'Commander Zavala': '69482069',
   'Xur': '2190858386',
-  'Tess Everis': '3361454721'
+  'Tess Everis': '3361454721',
+  'Petra Venj': '1841717884'
 };
-
-// Only fetch these item types
-const filterTypes = [
-  'Weekly Bounty',
-  'Daily Bounty',
-  'Weekly Drifter Bounty',
-  'Gambit Bounty',
-  'Weapon Mod',
-  'Armor Mod'
-];
 
 // const authUrl = traveler.generateOAuthURL();
 // console.log( authUrl );
@@ -73,10 +64,16 @@ getRefreshToken().then(function(accessToken){
 
     // Get item hash of vendor items
     await traveler.getVendors(membershipType, destinyMembershipId, characterId, { components: [402, 400] }).then(function(response){
+
+      // console.log( response.Response.sales.data['863940356'].saleItems[2].costs );
+
       for(var vendor in saleItemsHash) {
         if( vendorHash[vendor] in response.Response.sales.data ) {
           saleItemsHash[ vendor ] = Object.keys( response.Response.sales.data[ vendorHash[vendor] ].saleItems ).map(function(key){
-            return response.Response.sales.data[ vendorHash[vendor] ].saleItems[key].itemHash;
+            return {
+              hash: response.Response.sales.data[ vendorHash[vendor] ].saleItems[key].itemHash,
+              cost: response.Response.sales.data[ vendorHash[vendor] ].saleItems[key].costs
+            }
           })
         }
       }
@@ -95,11 +92,20 @@ getRefreshToken().then(function(accessToken){
 
     for(var vendor in saleItemsHash) {
       for(var i=0; i<saleItemsHash[vendor].length; i++) {
-        let itemHash = saleItemsHash[ vendor ][i];
+        let itemHash = saleItemsHash[ vendor ][i].hash;
+        let costHash = null; // cost item's hash
+        let costAmount = null;
+        let costName = null;
+
+        if( saleItemsHash[ vendor ][i].cost.length > 0 ) {
+          costHash = saleItemsHash[ vendor ][i].cost[0].itemHash;
+          costAmount = saleItemsHash[ vendor ][i].cost[0].quantity;
+          costName = itemDefinition[costHash].displayProperties.name;
+        }
 
         saleItems[vendor].push( itemDefinition[itemHash] );
 
-        await pool.query("INSERT INTO vendor_sales SET ?", {
+        item = {
           itemTypeDisplayName: itemDefinition[itemHash].itemTypeDisplayName,
           itemTypeAndTierDisplayName: itemDefinition[itemHash].itemTypeAndTierDisplayName,
           hash: itemDefinition[itemHash].hash,
@@ -107,13 +113,22 @@ getRefreshToken().then(function(accessToken){
           description: itemDefinition[itemHash].displayProperties.description,
           name: itemDefinition[itemHash].displayProperties.name,
           icon: itemDefinition[itemHash].displayProperties.hasIcon == true ? itemDefinition[itemHash].displayProperties.icon : '',
+          cost: costAmount,
+          cost_hash: costHash,
+          cost_name: costName,
           date_added: moment().format('YYYY-MM-DD H:00:00')
-        })
+        };
+
+        // ON DUPLICATE KEY UPDATE cost = '" + costAmount + "', cost_hash = '" + costHash + "', cost_name = '" + costName + "'"
+
+        await pool.query("INSERT INTO vendor_sales SET ?", item)
         .catch(function(e){
           console.log("Error Code: " + e.errno + " >>> " + e.sqlMessage);
         });
       }
     }
+
+    // console.log( saleItems['Petra Venj'] );
 
     // Bye!
     process.exit();
