@@ -1,0 +1,166 @@
+extends layout
+
+block header
+  script(src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js")
+  script(src="/javascripts/index.js?25")
+
+block content
+  .row.bg-transparent.border-bottom.border-warning
+    .col-md-12
+      div.home-container.d-flex.flex-column.justify-content-center.align-items-center.w-100.p-md-5.pl-3.pr-3.pt-4.pb-4
+        h5.mb-4 About Us
+
+        p.text-justify We are a group of players from <span class="flag-icon flag-icon-sg"></span> Singapore (SG), playing on +8 GMT time zone. The majority of us are matured players between the age of 21 to 35. If you are in a similar time zone or is a fellow SG player, feel free to join us for some PvE and PvP fun! We have both casual and hardcore players.
+
+        p.text-justify Links to either clans and Discord can be found below. If both clans are full or if you encounter any problem, dm one of our admin in Discord.
+
+  .row.bg-transparent.border-bottom.border-warning
+    .col-md-12
+      .home-vendor-container.w-100.p-md-5.pl-3.pr-3.pt-4.pb-4
+        .row.spinner
+          .col-md-4.left-col
+          .col-md-4.mid-col
+          .col-md-4.right-col
+
+
+  .row.bg-transparent.border-bottom.border-warning
+    .col-md-12
+      div.onlineChart-container.w-100.p-md-5.pl-3.pr-3.pt-4.pb-4
+        h5.text-center.mb-5 Clan Activity (Members Online)
+        canvas#onlineHistory.chart-canvas.bg-transparent.mb-3.spinner.spinner.d-flex.justify-content-center(style="max-height: 250px;")
+
+  .row.bg-transparent
+    .col-md-12
+      div.link-container.d-flex.flex-column.flex-md-row.justify-content-center.justify-content-md-around.align-items-md-start.align-items-center.w-100.p-md-5.pl-3.pr-3.pt-4.pb-4
+
+        div.order-0.order-md-0.pl-0.pr-0.pl-md-5.pr-md-5.mb-5.mb-md-0
+          a.text-light.text-decoration-none(href="http://bit.ly/sgeclan1", target="_blank")
+            h4.text-center.mb-2 Clan 1
+            div.text-center
+              i.fas.fa-home.mt-2
+            div.mt-2.text-center http://bit.ly/sgeclan1
+
+        div.order-3.order-md-2.pl-0.pr-0.pl-md-5.pr-md-5
+          a.text-light.text-decoration-none(href="https://discord.gg/qkUuhB7", target="_blank")
+            h4.text-center.mb-2 Discord
+            div.text-center
+              i.fab.fa-discord.mt-2
+            div.mt-2.text-center https://discord.gg/qkUuhB7
+
+        div.order-2.order-md-3.pl-0.pr-0.pl-md-5.pr-md-5.mb-5.mb-md-0
+          a.text-light.text-decoration-none(href="http://bit.ly/sgeclan2", target="_blank")
+            h4.text-center.mb-2 Clan 2
+            div.text-center
+              i.fas.fa-home.mt-2
+            div.mt-2.text-center http://bit.ly/sgeclan2
+
+block footer
+  style.
+    .vendor-item:hover {
+      cursor: pointer;
+    }
+  script.
+    $(document).ready(function(){
+      $.get('/api/vendor', function(data){
+
+        $('.home-vendor-container .row').removeClass('spinner');
+
+        var vendorHash = {
+          'Suraya Hawthorne': '3347378076',
+          'Ada-1': '2917531897',
+          'Banshee-44': '672118013',
+          'Spider': '863940356',
+          'Lord Shaxx': '3603221665',
+          'The Drifter': '248695599',
+          'Lord Saladin': '895295461',
+          'Commander Zavala': '69482069',
+          'Xur': '2190858386',
+          'Tess Everis': '3361454721'
+        };
+
+        var gambitBountiesFilter = [
+          'Gambit Bounty',
+          'Weekly Drifter Bounty'
+        ];
+
+        var tessFilter = [
+          'Emote',
+          'Ghost Shell',
+          'Ship',
+          'Transmat Effect',
+          'Vehicle',
+          'Weapon Ornament',
+          'Armor Ornament'
+        ];
+
+        data = JSON.parse(data);
+
+        if( data.length > 0 ) {
+          raid_bounties = data.filter(function(item){ return item.vendor_hash == vendorHash['Suraya Hawthorne'] && item.itemTypeDisplayName == 'Weekly Bounty' });
+
+          gambit_bounties = data.filter(function(item){ return item.vendor_hash == vendorHash['The Drifter'] && gambitBountiesFilter.includes(item.itemTypeDisplayName) });
+
+          spider_wares = data.filter(function(item){ return item.vendor_hash == vendorHash['Spider'] && item.itemTypeDisplayName == '' });
+
+          spider_powerful_bounty = data.filter(function(item){ return item.vendor_hash == vendorHash['Spider'] && item.itemTypeDisplayName == 'Weekly Bounty' && item.icon == '/common/destiny2_content/icons/ec18be1d4459f3747a06fa5c34342a17.jpg' });
+
+          banshee_wares = data.filter(function(item){ return item.vendor_hash == vendorHash['Banshee-44'] && item.icon != '' });
+
+          xur_wares = data.filter(function(item){ return item.vendor_hash == vendorHash['Xur'] && item.itemTypeDisplayName != 'Challenge Card' });
+
+          tess_wares = data.filter(function(item){ return item.vendor_hash == vendorHash['Tess Everis'] && tessFilter.includes(item.itemTypeDisplayName) });
+
+          if( raid_bounties.length > 0 ) {
+            $('.left-col').append( getVendorStr(raid_bounties, 'Weekly Raid ' + (raid_bounties.length > 1 ? 'Bounties' : 'Bounty') ) );
+          }
+
+          if( gambit_bounties.length > 0 ) {
+            $('.left-col').append( getVendorStr(gambit_bounties, 'Gambit Bounties') );
+          }
+
+          if( spider_powerful_bounty.length > 0 ) {
+            $('.left-col').append( getVendorStr(spider_powerful_bounty, 'Spider\'s Powerful Bounty') );
+          }
+
+          if( banshee_wares.length > 0 ) {
+            $('.mid-col').append( getVendorStr(banshee_wares, 'Banshee-44\'s Mods') );
+          }
+
+          if( spider_wares.length > 0 ) {
+            $('.mid-col').append( getVendorStr(spider_wares, 'Spider\'s Wares') );
+          }
+
+          if( xur_wares.length > 0 ) {
+            $('.right-col').append( getVendorStr(xur_wares, 'Xur\'s Shinies') );
+          }
+
+          if( tess_wares.length > 0 ) {
+            $('.right-col').append( getVendorStr(tess_wares, 'Tess\'s Shinies') );
+          }
+
+          $('[data-toggle="tooltip"]').tooltip();
+        }
+      })
+    });
+
+    function getVendorStr(data, title) {
+      str = `
+      <div class="mb-3 border-warning border">
+        <div class="border-warning border-bottom p-2">`+title+`</div>
+        <div class="pl-2 pr-2 pt-2 pb-1">
+      `;
+
+      for(var i=0; i<data.length; i++) {
+        str += `
+        <div class="d-flex mb-1 vendor-item" data-toggle="tooltip" title="`+data[i].description+`">
+          <img class="img-fluid" src="https://bungie.net`+data[i].icon+`" style="width: 20px; height: 20px; margin-right: 5px;"/>`+data[i].name+`
+        </div>
+        `;
+      }
+
+      str += `
+        </div>
+      </div>
+      `
+      return str;
+    }

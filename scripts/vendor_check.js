@@ -37,8 +37,19 @@ const vendorHash = {
   'Tess Everis': '3361454721'
 };
 
+// Only fetch these item types
+const filterTypes = [
+  'Weekly Bounty',
+  'Daily Bounty',
+  'Weekly Drifter Bounty',
+  'Gambit Bounty',
+  'Weapon Mod',
+  'Armor Mod'
+];
+
 // const authUrl = traveler.generateOAuthURL();
 // console.log( authUrl );
+// const accessCode = '79b66a9b1ee1939b27e1eaf6c8561ae7';
 
 // Get oauth token info
 getRefreshToken().then(function(accessToken){

@@ -60,7 +60,8 @@ nav .navbar-brand {
 /*************************************/
 .onlineChart-container,
 .link-container,
-.home-container {
+.home-container,
+.home-vendor-container {
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -68,6 +69,9 @@ nav .navbar-brand {
   max-height: 140px;
   position: relative;
   right: 2px;
+}
+.vendor-item:hover {
+  cursor: pointer;
 }
 /*************************************
   Leaderboard
@@ -124,9 +128,6 @@ nav .navbar-brand {
   .link-container i.fas,
   .link-container i.fab {
     font-size: 70px;
-  }
-  .home-container {
-    min-height: 0!important;
   }
 }
 
