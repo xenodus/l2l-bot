@@ -116,10 +116,13 @@ $(document).ready(function(){
           name: 'Prism',
           description: 'Attacks matching the periodically rotating focused element do more damage. Other elemental damage is reduced. Incoming damage is unaffected.',
           icon: 'https://bungie.net/common/destiny2_content/icons/7cd52fc7131a02c6b03544df779cb8c6.png'
-        }
+        },
+        expiry: moment('2019-01-23 01:00:00', 'YYYY-MM-DD H:mm:ss')
       };
 
-      $('.right-col').prepend( getRaidLairModifiers(raid_lair_modifiers) );
+      if( raid_lair_modifiers.expiry.diff() > 0 ) {
+        $('.right-col').prepend( getRaidLairModifiers(raid_lair_modifiers) );
+      }
 
       if( tess_wares.length > 0 ) {
         $('.right-col').append( getVendorStr(tess_wares, 'Tess\'s Precious') );
