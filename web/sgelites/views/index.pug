@@ -2,7 +2,7 @@ extends layout
 
 block header
   script(src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js")
-  script(src="/javascripts/index.js?32")
+  script(src="/javascripts/index.js?69")
 
 block content
   .row.bg-transparent.border-bottom.border-warning
@@ -17,15 +17,20 @@ block content
   .row.bg-transparent.border-bottom.border-warning
     .col-md-12
       .home-vendor-container.w-100.p-md-5.pl-3.pr-3.pt-4.pb-4
+        .row
+          .col-md-12.full-col
         .row.spinner
           .col-md-4.left-col
           .col-md-4.mid-col
           .col-md-4.right-col
+        .row
+          .col-md-12.text-center
+            small Data indicated with *** are curated manually and may not be super accurate post reset
 
   .row.bg-transparent.border-bottom.border-warning
     .col-md-12
       div.onlineChart-container.w-100.p-md-5.pl-3.pr-3.pt-4.pb-4
-        h5.text-center.mb-5 Clan Activity (Members Online)
+        h5.text-center.mb-5 Clan Activity
         canvas#onlineHistory.chart-canvas.bg-transparent.mb-3.spinner.spinner.d-flex.justify-content-center(style="max-height: 250px;")
 
   .row.bg-transparent

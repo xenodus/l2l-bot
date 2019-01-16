@@ -26,7 +26,7 @@ const manifest = {
 
 traveler.getCharacter(membershipType, destinyMembershipId, characterId, { components: [204] }).then(async function(response){
   activities = response.Response.activities.data.availableActivities.filter(function(activity){
-    return activity.displayLevel == 50 && activity.activityHash != '927394522';
+    return activity.displayLevel == 50;
   });
 
   if( activities.length > 0 ) {
@@ -35,7 +35,8 @@ traveler.getCharacter(membershipType, destinyMembershipId, characterId, { compon
     let nightfalls = [];
 
     for(var i=0; i<activities.length; i++) {
-      if( activityDefinition[ activities[i].activityHash ].activityTypeHash == nightfallActivityTypeHash ) {
+      // Only modifiers array > 0 is real nightfall
+      if( activityDefinition[ activities[i].activityHash ].activityTypeHash == nightfallActivityTypeHash && activityDefinition[ activities[i].activityHash ].modifiers.length > 0 ) {
 
         nf = {
           name: activityDefinition[ activities[i].activityHash ].displayProperties.name,
@@ -50,16 +51,15 @@ traveler.getCharacter(membershipType, destinyMembershipId, characterId, { compon
           console.log("Error Code: " + e.errno + " >>> " + e.sqlMessage);
         });
 
-        /*
         nightfalls.push( {
-          a: activityDefinition[ activities[i].activityHash ].displayProperties.name,
-          b: activities[i]
+          a: activityDefinition[ activities[i].activityHash ].displayProperties,
+          b: activityDefinition[ activities[i].activityHash ],
+          c: activities[i]
         } );
-        */
       }
     }
 
-    //console.log(nightfalls);
+    console.log(nightfalls);
   }
 
   process.exit();

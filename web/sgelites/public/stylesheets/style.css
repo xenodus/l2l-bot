@@ -73,6 +73,11 @@ nav .navbar-brand {
 .vendor-item:hover {
   cursor: pointer;
 }
+.tooltip-inner {
+  text-align: left;
+  font-size: 12px;
+  line-height: 16px;
+}
 /*************************************
   Leaderboard
 /*************************************/

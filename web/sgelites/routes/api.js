@@ -46,11 +46,18 @@ router.get('/events', function(req, res, next) {
   })
 });
 
+router.get('/nightfall', async function(req, res, next) {
+  pool.query("SELECT * FROM active_nightfall")
+  .then(function(results){
+    res.json( JSON.stringify(results) );
+  })
+});
+
 router.get('/vendor/:vendor_hash?', async function(req, res, next) {
   let vendor_hash = req.params.vendor_hash;
 
   if( vendor_hash ) {
-    pool.query("SELECT * FROM `vendor_sales` WHERE vendor_hash = ? AND date_added = ?", [
+    pool.query("SELECT * FROM `vendor_sales` WHERE vendor_hash = ? ORDER BY vendor_hash, itemTypeDisplayName", [
       vendor_hash,
       moment().format('YYYY-MM-DD H:00:00')
     ])
@@ -59,7 +66,7 @@ router.get('/vendor/:vendor_hash?', async function(req, res, next) {
     })
   }
   else {
-    pool.query("SELECT * FROM `vendor_sales` WHERE date_added = ?", [
+    pool.query("SELECT * FROM `vendor_sales` WHERE 1 ORDER BY vendor_hash, itemTypeDisplayName", [
       moment().format('YYYY-MM-DD H:00:00')
     ])
     .then(function(results){
