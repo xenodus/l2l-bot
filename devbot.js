@@ -181,14 +181,13 @@ client.on("message", async function(message) {
   console.log( timestampPrefix() + "Message: " + message.content + " By: " + message.author.username );
 
   message.content = message.content.replace(/“/g, '"').replace(/”/g, '"');
-
+  serverID = message.guild.id;
   isAdmin = (serverID == happyMealServerID ||
     message.member.roles.find(roles => roles.name === "Admin") ||
     message.member.roles.find(roles => roles.name === "Clan Mods") ||
     Object.keys(config.adminIDs).includes(message.member.id) ||
     Object.keys(config.sherpaIDs).includes(message.member.id)) ? true : false;
 
-  serverID = message.guild.id;
   maxConfirmed = (serverID == sgeServerID) ? 6 : 999;
 
   const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
