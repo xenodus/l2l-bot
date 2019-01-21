@@ -104,6 +104,8 @@ async function getClanMembers() {
           member.pve[pveKeys[index]] = 0;
         }
 
+        member.pve['characters_deleted'] = 0;
+
         for(var index in weaponKillsKeys) {
           member.weapon[weaponKillsKeys[index]] = 0;
         }
@@ -136,6 +138,9 @@ async function getPVEStats(clanMembersInfo) {
         for(var index in pveKeys) {
           clanMembersInfo[i].pve[pveKeys[index]] = res.data.Response.mergedAllCharacters.results.allPvE.allTime[pveKeys[index]].basic.displayValue ? res.data.Response.mergedAllCharacters.results.allPvE.allTime[pveKeys[index]].basic.displayValue : 0;
         }
+
+        if( res.data.Response.characters.length > 0 )
+          clanMembersInfo[i].pve['characters_deleted'] = res.data.Response.characters.filter(function(char){ return char.deleted == true }).length;
 
         // Weapons
         for(var index in weaponKillsKeys) {

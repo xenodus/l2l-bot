@@ -23,7 +23,7 @@ $(document).ready(function(){
           "orderable": false,
           "targets": 0
       } ],
-      "order": [[ 13, 'desc' ]]
+      "order": [[ 12, 'desc' ]]
     });
 
     raid_table.on( 'order.dt search.dt', function () {
@@ -65,7 +65,7 @@ $(document).ready(function(){
           "orderable": false,
           "targets": 0
       } ],
-      "order": [[ 7, 'desc' ]]
+      "order": [[ 6, 'desc' ]]
     });
 
     pvp_table.on( 'order.dt search.dt', function () {
@@ -107,7 +107,7 @@ $(document).ready(function(){
           "orderable": false,
           "targets": 0
       } ],
-      "order": [[ 3, 'desc' ]]
+      "order": [[ 2, 'desc' ]]
     });
 
     triumph_table.on( 'order.dt search.dt', function () {
@@ -157,7 +157,7 @@ function triumphDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-left">Clan</th>
+          <!--th class="text-left">Clan</th-->
           <th class="text-right">Triumph</th>
         </tr>
     </thead>
@@ -171,7 +171,7 @@ function triumphDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].username+bnetId+`</td>
-      <td class="text-left">`+rows[i].clan_no+`</td>
+      <!--td class="text-left">`+rows[i].clan_no+`</td-->
       <td class="text-right">`+rows[i].triumph.toLocaleString()+`</td>
     </tr>`;
   }
@@ -739,7 +739,7 @@ function weaponDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-left">Clan</th>
+          <!--th class="text-left">Clan</th-->
           <th class="text-right">Auto Rifle</th>
           <th class="text-right">Bow</th>
           <th class="text-right">Fusion Rifle</th>
@@ -765,7 +765,7 @@ function weaponDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].display_name+bnetId+`</td>
-      <td class="text-left">`+rows[i].clan_no+`</td>
+      <!--td class="text-left">`+rows[i].clan_no+`</td-->
       <td class="text-right">`+rows[i].weaponKillsAutoRifle.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].weaponKillsBow.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].weaponKillsFusionRifle.toLocaleString()+`</td>
@@ -819,7 +819,7 @@ function raidDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-left">Clan</th>`;
+          <!--th class="text-left">Clan</th-->`;
 
   Object.keys(raids).forEach(function(raid) {
     str += `<th class="text-nowrap text-right">`+raid+`</th>`;
@@ -844,7 +844,7 @@ function raidDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].display_name+bnetId+`</td>
-      <td class="text-left">`+rows[i].clan_no+`</td>`;
+      <!--td class="text-left">`+rows[i].clan_no+`</td-->`;
 
     var activityCount = 0;
 
@@ -888,7 +888,7 @@ function pveDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-left">Clan</th>
+          <!--th class="text-left">Clan</th-->
           <th class="text-right">Kills</th>
           <th class="text-right">Deaths</th>
           <th class="text-right">Suicides</th>
@@ -899,6 +899,7 @@ function pveDataTable(rows) {
           <th class="text-right">Activities Cleared</th>
           <th class="text-right">Raids Cleared</th>
           <th class="text-right">Public Events Completed</th>
+          <th class="text-right">Characters Deleted</th>
         </tr>
     </thead>
     <tbody>`;
@@ -911,7 +912,7 @@ function pveDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].display_name+bnetId+`</td>
-      <td class="text-left">`+rows[i].clan_no+`</td>
+      <!--td class="text-left">`+rows[i].clan_no+`</td-->
       <td class="text-right text-success">`+rows[i].kills.toLocaleString()+`</td>
       <td class="text-right text-danger">`+rows[i].deaths.toLocaleString()+`</td>
       <td class="text-right text-danger">`+rows[i].suicides.toLocaleString()+`</td>
@@ -922,6 +923,7 @@ function pveDataTable(rows) {
       <td class="text-right">`+rows[i].activitiesCleared.toLocaleString()+`</td>
       <td class="text-right">`+rows[i].raid_count+`</td>
       <td class="text-right">`+rows[i].publicEventsCompleted.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].characters_deleted.toLocaleString()+`</td>
     </tr>`;
   }
 
@@ -989,7 +991,7 @@ function gambitDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-center">Clan</th>
+          <!--th class="text-center">Clan</th-->
           <th class="text-right">Infamy</th>
           <th class="text-right">Resets</th>
           <th class="text-right">Kills</th>
@@ -1019,7 +1021,7 @@ function gambitDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].display_name+bnetId+`</td>
-      <td class="text-center">`+rows[i].clan_no+`</td>
+      <!--td class="text-center">`+rows[i].clan_no+`</td-->
       <td class="text-right" data-sort="`+rows[i].infamy+`">`+rows[i].infamy.toLocaleString()+`<div class="rank-`+infamy_rank.split(" ").join("").toLowerCase()+`"><small>`+infamy_rank+`</small></div></td>
       <td class="text-right">`+rows[i].infamy_resets+`</td>
       <td class="text-right text-success">`+rows[i].kills.toLocaleString()+`</td>
@@ -1110,7 +1112,7 @@ function pvpDataTable(rows) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name / Battle.net ID</th>
-          <th class="text-center">Clan</th>
+          <!--th class="text-center">Clan</th-->
           <th class="text-right">KD</th>
           <th class="text-right">KDA</th>
           <th class="text-right">KAD</th>
@@ -1134,7 +1136,7 @@ function pvpDataTable(rows) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+rows[i].display_name+bnetId+`</td>
-      <td class="text-center">`+rows[i].clan_no+`</td>
+      <!--td class="text-center">`+rows[i].clan_no+`</td-->
       <td class="text-right">`+rows[i].kd+`</td>
       <td class="text-right">`+rows[i].kda+`</td>
       <td class="text-right">`+rows[i].kad+`</td>
