@@ -25,8 +25,9 @@ const manifest = {
 };
 
 const vendorHash = {
+  'Ada-1': '2917531897',
+  /*
   'Suraya Hawthorne': '3347378076',
-  /* 'Ada-1': '2917531897', */
   'Banshee-44': '672118013',
   'Spider': '863940356',
   'Lord Shaxx': '3603221665',
@@ -36,6 +37,7 @@ const vendorHash = {
   'Xur': '2190858386',
   'Tess Everis': '3361454721',
   'Petra Venj': '1841717884'
+  */
 };
 
 // const authUrl = traveler.generateOAuthURL();

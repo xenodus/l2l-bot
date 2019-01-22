@@ -60,6 +60,8 @@ $(document).ready(function(){
 
       saladin_bounties = data.filter(function(item){ return item.vendor_hash == vendorHash['Lord Saladin'] && item.itemTypeDisplayName == 'Iron Banner Bounty' });
 
+      ada_frames = data.filter(function(item){ return item.vendor_hash == vendorHash['Ada-1'] && item.cost_name == 'Ballistics Log' });
+
       if( raid_bounties.length > 0 ) {
         $('.left-col').append( getVendorStr(raid_bounties, 'Weekly Raid & Clan ' + (raid_bounties.length > 1 ? 'Bounties' : 'Bounty') ) );
       }
@@ -80,6 +82,10 @@ $(document).ready(function(){
         $('.mid-col').append( getVendorStr(banshee_wares, 'Banshee-44\'s Mods') );
       }
 
+      if( ada_frames.length > 0 ) {
+        $('.mid-col').append( getVendorStr(ada_frames, 'Ada-1\'s Powerful Frames') );
+      }
+
       if( spider_powerful_bounty.length > 0 ) {
         $('.mid-col').append( getVendorStr(spider_powerful_bounty, 'Spider\'s Powerful Bounty') );
       }
@@ -91,7 +97,7 @@ $(document).ready(function(){
       escalation_protocol = getEscalationProtocol();
 
       if( escalation_protocol.length > 0  ) {
-        $('.mid-col').append( getVendorStr( escalation_protocol, 'Escalation Protocol') );
+        $('.left-col').append( getVendorStr( escalation_protocol, 'Escalation Protocol') );
       }
 
       if( xur_wares.length > 0 ) {
@@ -108,16 +114,16 @@ $(document).ready(function(){
 
       raid_lair_modifiers = {
         loadouts: {
-          primary: 'Hand Cannon',
-          energy: 'Sniper Rifle',
+          primary: 'Auto Rifle',
+          energy: 'Auto Rifle',
           power: 'Anything'
         },
         modifier: {
-          name: 'Prism',
-          description: 'Attacks matching the periodically rotating focused element do more damage. Other elemental damage is reduced. Incoming damage is unaffected.',
-          icon: 'https://bungie.net/common/destiny2_content/icons/7cd52fc7131a02c6b03544df779cb8c6.png'
+          name: 'Arsenal',
+          description: 'Weapons have no reserve ammo. Emptying the clip of a weapon refills the clips of your holstered weapons.',
+          icon: 'https://bungie.net/common/destiny2_content/icons/5e870c7f571cf35554183a9b330cbf23.png'
         },
-        expiry: moment('2019-01-23 01:00:00', 'YYYY-MM-DD H:mm:ss')
+        expiry: moment('2019-01-30 01:00:00', 'YYYY-MM-DD H:mm:ss')
       };
 
       if( raid_lair_modifiers.expiry.diff() > 0 ) {
@@ -476,7 +482,7 @@ $(document).ready(function(){
       }
     }
 
-    var description = 'The curse level is ' + curseLevels[index].toLowerCase() + ' in the Dreaming City this week.';
+    var description = 'The curse level is <u>' + curseLevels[index].toLowerCase() + '</u> in the Dreaming City.';
 
     if( index == 2 )
       description += ' Shattered Throne is up.';

@@ -79,17 +79,37 @@ nav .navbar-brand {
   line-height: 16px;
 }
 /*************************************
+  One Signal
+/*************************************/
+.onesignal-customlink-subscribe.button:active, .onesignal-customlink-subscribe.button:focus, .onesignal-customlink-subscribe.button:hover {
+  box-shadow: none!important;
+  text-transform: uppercase!important;
+  font-weight: normal!important;
+  font-size: 13px!important;
+}
+
+.onesignal-customlink-subscribe.button {
+  box-shadow: none!important;
+  text-transform: uppercase!important;
+  font-weight: normal!important;
+  font-size: 13px!important;
+}
+.onesignal-customlink-explanation, .onesignal-customlink-explanation.onesignal-reset {
+  text-align: center!important;
+  color: #fff!important;
+}
+/*************************************
   Leaderboard
 /*************************************/
 .fixedHeader-floating {
   color: #000;
 }
-/*************************************
-  Leaderboard
-/*************************************/
 table.dataTable {
   font-size: 14px;
 }
+/*************************************
+  AJAX Loader
+/*************************************/
 .spinner {
   width: 40px;
   height: 40px;

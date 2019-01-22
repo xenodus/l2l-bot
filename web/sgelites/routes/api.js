@@ -104,6 +104,13 @@ router.get('/live/clan/online', async function(req, res, next) {
   res.json( JSON.stringify(clan_members_online) );
 });
 
+router.get('/stats/online/detailed', function(req, res, next) {
+  pool.query("SELECT datetime, sum(no_online) as no_online FROM `clan_historical_online_stats` WHERE 1 GROUP BY  datetime")
+  .then(function(results){
+    res.json( JSON.stringify(results) );
+  })
+});
+
 router.get('/stats/online', function(req, res, next) {
   pool.query("SELECT datetime, sum(no_online) as no_online FROM `clan_historical_online_stats` WHERE datetime >= ( CURDATE() - INTERVAL 7 DAY ) GROUP BY  datetime")
   .then(function(results){

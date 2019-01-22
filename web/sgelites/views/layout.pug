@@ -22,7 +22,7 @@ html(lang="en")
     //- Custom Style
     link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.1/css/flag-icon.min.css")
     link(rel="stylesheet", href="https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i")
-    link(rel='stylesheet', href='/stylesheets/style.css?73')
+    link(rel='stylesheet', href='/stylesheets/style.css?79')
     // - RPG Awesome
     link(rel='stylesheet', href='/rpg-awesome/css/rpg-awesome.css')
 
@@ -35,6 +35,17 @@ html(lang="en")
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'UA-35918300-3');
+
+    link(rel='manifest' href='/manifest.json')
+    script(src='https://cdn.onesignal.com/sdks/OneSignalSDK.js' async='')
+    script.
+      var OneSignal = window.OneSignal || [];
+      OneSignal.push(function() {
+      OneSignal.init({
+      appId: "5256c58d-444b-434c-be2b-cbffc54fb9ae",
+      });
+      });
+
     block header
 
   body.bg-transparent

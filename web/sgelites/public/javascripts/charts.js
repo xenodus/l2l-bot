@@ -1,5 +1,5 @@
 $(document).ready(function(){
-  $.get('/api/stats/online', function(onlineData){
+  $.get('/api/stats/online/detailed', function(onlineData){
     onlineData = JSON.parse(onlineData);
 
     $('#onlineHistory').removeClass('spinner');
