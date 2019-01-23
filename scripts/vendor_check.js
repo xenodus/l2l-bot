@@ -133,7 +133,7 @@ getRefreshToken().then(function(accessToken){
     }
 
     if( no > 0 ) {
-      await pool.query("DELETE FROM vendor_sales WHERE date_added != ?", [moment().format('YYYY-MM-DD H:00:00')])
+      await pool.query("DELETE FROM vendor_sales WHERE date_added != ? AND vendor_hash != ?", [moment().format('YYYY-MM-DD H:00:00'), '2917531897'])
       .catch(function(e){
         console.log("Error Code: " + e.errno + " >>> " + e.sqlMessage);
       });

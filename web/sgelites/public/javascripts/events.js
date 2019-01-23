@@ -7,6 +7,7 @@ $(document).ready(function(){
       $("#events-table-container").html( eventDatatable(data) );
       $("#events_table").addClass("bg-white text-dark");
   });
+
 });
 
 function eventDatatable(events) {

@@ -1167,8 +1167,11 @@ function Event() {
 
     richEmbed.addField(
       "Quick Commands",
-      '__Create event__ \n!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n__Please follow the standard format__ \n"Date Time [Levi/EoW/SoS/LW/SoTP] Event Title" "Optional Description"\n\n__Full command list__ \n!event help',
-      true);
+      '__Create event__ \n!event create "13 Dec 8:30PM [EoW] Prestige teaching raid" "Newbies welcome"\n\n__Please follow the standard format__ \n"Date Time [Levi/EoW/SoS/LW/SoTP] Event Title" "Optional Description"\n\n__Full command list__ \n!event help');
+
+    richEmbed.addField(
+      "\u200b",
+      '[:link: Subscribe to receive push notifications of new events](https://sgelites.com/events)');
 
     eventChannel.send( "If you're unable to see anything in this channel, make sure User Settings > Text & Images > Link Preview is checked." );
     eventChannel.send( richEmbed );

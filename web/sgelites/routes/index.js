@@ -19,10 +19,6 @@ router.get('/sitemap.xml', function(req, res, next) {
   res.send( sitemap.toString() );
 });
 
-router.get('/test', function(req, res, next) {
-  res.render('index2', { title: '[Test] SG-Elites: A Destiny 2 Clan from Singapore' });
-});
-
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'SG-Elites: A Destiny 2 Clan from Singapore' });
 });
