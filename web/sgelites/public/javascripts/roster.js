@@ -10,29 +10,29 @@ $(document).ready(function(){
     if( last_online ) {
       switch(last_online){
         case "last-week":
-          $(".last-week").append("<i class='fas fa-check ml-1 text-success'></i>");
+          $(".last-week").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') <= 7 });
           break;
         case "2-weeks-ago":
-          $(".two-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          $(".two-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 7 && moment().diff( moment(member.last_online) , 'days') <= 14 });
           break;
         case "3-weeks-ago":
-          $(".three-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          $(".three-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 14 && moment().diff( moment(member.last_online) , 'days') <= 21 });
           break;
         case "4-weeks-ago":
-          $(".four-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          $(".four-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 && moment().diff( moment(member.last_online) , 'days') <= 28 });
           break;
         case "more-than-1-month-ago":
-          $(".more-than-one-month-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          $(".more-than-one-month-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 28 });
           break;
       }
     }
     else {
-      $(".default-filter").append("<i class='fas fa-check ml-1 text-success'></i>");
+      $(".default-filter").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
     }
 
     $.get("api/characters", function(charData){

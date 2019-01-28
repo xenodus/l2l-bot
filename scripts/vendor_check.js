@@ -62,25 +62,59 @@ getRefreshToken().then(function(accessToken){
       saleItemsHash[key] = [];
     });
 
+    // Get item definitions
+    itemDefinition = await getItemDefinition();
+
     // Get item hash of vendor items
-    await traveler.getVendors(membershipType, destinyMembershipId, characterId, { components: [402, 400] }).then(function(response){
+    await traveler.getVendors(membershipType, destinyMembershipId, characterId, { components: [402, 400, 302, 305] }).then(function(response){
 
       // console.log( response.Response.sales.data['863940356'].saleItems[2].costs );
 
       for(var vendor in saleItemsHash) {
         if( vendorHash[vendor] in response.Response.sales.data ) {
           saleItemsHash[ vendor ] = Object.keys( response.Response.sales.data[ vendorHash[vendor] ].saleItems ).map(function(key){
+
+            // Get perks of sales item
+            let perks = [];
+
+            if( response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ] ) {
+              if( response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ].sockets.length > 0 ) {
+
+                let sockets = response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ].sockets;
+                // let perksInterested = ['Intrinsic', 'Armor Perk', 'Barrel', 'Magazine', 'Grip', 'Scope'];
+                let perksExcluded = ['Trait', 'Restore Defaults']; // traits = stats, restore default == shader
+
+                for(var i=0; i<sockets.length; i++) {
+                  if( sockets[i].plugHash &&
+                    itemDefinition[ sockets[i].plugHash ] &&
+                    itemDefinition[ sockets[i].plugHash ].itemTypeDisplayName &&
+                    // perksInterested.includes(itemDefinition[ sockets[i].plugHash ].itemTypeDisplayName) &&
+                    sockets[i].reusablePlugs &&
+                    perksExcluded.includes( itemDefinition[ sockets[i].plugHash ].itemTypeDisplayName ) == false &&
+                    sockets[i].reusablePlugs.length > 0 // Only get perks where there are more than 1 to choose from aka not fixed
+                  ){
+                    let perkGroup = []; // put into sub groups so we know which perks can be chosen per slot
+
+                    for(var j=0; j<sockets[i].reusablePlugs.length; j++) {
+                      if( sockets[i].reusablePlugs[j].canInsert == true ) {
+                        perkGroup.push( itemDefinition[ sockets[i].reusablePlugs[j].plugItemHash ] );
+                      }
+                    }
+                    perks.push( perkGroup );
+                  }
+                }
+              }
+            }
+
             return {
               hash: response.Response.sales.data[ vendorHash[vendor] ].saleItems[key].itemHash,
-              cost: response.Response.sales.data[ vendorHash[vendor] ].saleItems[key].costs
+              cost: response.Response.sales.data[ vendorHash[vendor] ].saleItems[key].costs,
+              perks: perks
             }
           })
         }
       }
     });
-
-    // Get item info of items vendor is selling
-    itemDefinition = await getItemDefinition();
 
     // To store vendor items' detailed info
     let saleItems = {};
@@ -124,6 +158,27 @@ getRefreshToken().then(function(accessToken){
         // ON DUPLICATE KEY UPDATE cost = '" + costAmount + "', cost_hash = '" + costHash + "', cost_name = '" + costName + "'"
 
         await pool.query("INSERT INTO vendor_sales SET ?", item)
+        .then(async function(result){
+          if( saleItemsHash[ vendor ][i].perks.length > 0 ) {
+            for(var j=0; j<saleItemsHash[ vendor ][i].perks.length; j++) { // perk group
+              for(var k=0; k<saleItemsHash[ vendor ][i].perks[j].length; k++) { // perks inside a group
+                let p = {
+                  vendor_sales_id: result.insertId,
+                  perk_group: j,
+                  date_added: moment().format('YYYY-MM-DD H:00:00'),
+                  description: saleItemsHash[ vendor ][i].perks[j][k].displayProperties.description,
+                  name: saleItemsHash[ vendor ][i].perks[j][k].displayProperties.name,
+                  icon: saleItemsHash[ vendor ][i].perks[j][k].displayProperties.hasIcon == true ? saleItemsHash[ vendor ][i].perks[j][k].displayProperties.icon : '',
+                  itemTypeDisplayName: saleItemsHash[ vendor ][i].perks[j][k].itemTypeDisplayName,
+                  itemTypeAndTierDisplayName: saleItemsHash[ vendor ][i].perks[j][k].itemTypeAndTierDisplayName,
+                  hash: saleItemsHash[ vendor ][i].perks[j][k].hash
+                };
+
+                await pool.query("INSERT INTO vendor_sales_item_perks SET ?", p);
+              }
+            }
+          }
+        })
         .catch(function(e){
           console.log("Error Code: " + e.errno + " >>> " + e.sqlMessage);
         });
