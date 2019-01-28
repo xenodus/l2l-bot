@@ -101,7 +101,14 @@ $(document).ready(function(){
       }
 
       if( xur_wares.length > 0 ) {
-        $('.right-col').append( getVendorStr(xur_wares, 'Xur\'s Shinies <small style="font-size: 60%;font-style: italic;"><a href="https://whereisxur.com/" target="_blank">Where is Xur?</a></small>') );
+        $.get('/api/sales-item-perks/' + vendorHash['Xur'], function(data){
+          var xur_item_perks = JSON.parse(data);
+          $('.right-col').prepend( getXurVendorStr(xur_wares, 'Xur\'s Shinies <small style="font-size: 60%;font-style: italic;"><a href="https://whereisxur.com/" target="_blank">Where is Xur?</a></small>', 'vertical', xur_item_perks) );
+
+          $('[data-toggle="tooltip"]').tooltip({
+            html: true
+          });
+        });
       }
 
       if( saladin_bounties.length > 0 ) {
@@ -127,7 +134,7 @@ $(document).ready(function(){
       };
 
       if( raid_lair_modifiers.expiry.diff() > 0 ) {
-        $('.right-col').prepend( getRaidLairModifiers(raid_lair_modifiers) );
+        $('.right-col').append( getRaidLairModifiers(raid_lair_modifiers) );
       }
 
       if( tess_wares.length > 0 ) {
@@ -373,6 +380,91 @@ $(document).ready(function(){
           </div>
           `;
         }
+      }
+
+      str += `
+      <div class="d-flex mb-1 vendor-item" data-toggle="tooltip" title="`+tooltip+`">
+        <img class="img-fluid" src="https://bungie.net`+data[i].icon+`" style="width: 20px; height: 20px; margin-right: 5px;"/>`+data[i].name+`
+      </div>
+      `;
+    }
+
+    str += `
+      </div>
+    </div>
+    `
+    return str;
+  }
+
+  function getXurVendorStr(data, title, type="vertical", xur_item_perks) {
+
+    str = `
+    <div class="mb-3 border-warning border">
+      <div class="border-warning border-bottom p-2">`+title+`</div>
+      <div class="pl-2 pr-2 pt-2 pb-1 `+(type=='vertical'?'':'d-md-flex flex-md-wrap justify-content-md-around')+`">
+    `;
+
+    for(var i=0; i<data.length; i++) {
+
+      var tooltip = '';
+      var cost = '';
+      var perks = '';
+      var item_perks = xur_item_perks.filter(function(perks){ return perks.vendor_sales_id == data[i].id  });
+
+      if( data[i].description ) {
+
+        if( data[i].cost ) {
+          cost = `<div class='mt-2'>Price: `+data[i].cost+` `+data[i].cost_name+`</div>`;
+        }
+
+        if( item_perks.length > 0 ) {
+          perks = `<div class='mt-2'>`;
+
+          prev_perk_group = '';
+          roll = 1;
+
+          for(var j=0; j<item_perks.length; j++) {
+            if( j == 0 ) {
+              perks += `<div class='mb-1'>Perk `+roll+`</div><div class='mb-2 border border-secondary'>`;
+            }
+            else if( prev_perk_group != item_perks[j].perk_group ) {
+              roll++;
+              perks += `</div><div class='mt-1 mb-1'>Perk `+roll+`</div><div class='mb-2 border border-secondary'>`;
+            }
+
+            perks += `<div class='d-flex align-items-center p-2 `+(prev_perk_group == item_perks[j].perk_group && j!=0 ? 'border-top border-secondary':'')+`'>
+                        <div>
+                          <img src='https://bungie.net`+item_perks[j].icon+`' class='mt-1 mb-1 mr-2' style='width: 30px; height: 30px;'/>
+                        </div>
+                        <div>
+                          <div class='font-weight-bold'>`+item_perks[j].name.replace(/"/g, "'")+`</div>
+                          <div class='perk-description'>`+item_perks[j].description.replace(/"/g, "'").replace(/•/g, "<br>• ")+`</div>
+                        </div>
+                      </div>`;
+
+            if( j+1 == item_perks.length ) {
+              perks += `</div>`;
+            }
+
+            prev_perk_group = item_perks[j].perk_group;
+          }
+
+          perks += `</div>`;
+        }
+
+        tooltip = `
+        <div>
+          <h6 class='font-weight-bold mb-1'>`+data[i].name+`</h6>
+          <div class='d-flex align-items-start'>
+            <div>
+              <img src='https://bungie.net`+data[i].icon+`' class='mt-1 mb-1 mr-2' style='width: 50px; height: 50px;'/>
+            </div>
+            <div>`+data[i].description.replace(/"/g, "'")+`</div>
+          </div>
+          `+cost+`
+          `+perks+`
+        </div>
+        `;
       }
 
       str += `

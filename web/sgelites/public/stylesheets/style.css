@@ -77,6 +77,11 @@ nav .navbar-brand {
   text-align: left;
   font-size: 12px;
   line-height: 16px;
+  max-width: 300px;
+}
+.tooltip-inner .perk-description {
+  font-size: 10px;
+  line-height: 12px;
 }
 /*************************************
   One Signal

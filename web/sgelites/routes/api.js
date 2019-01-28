@@ -75,6 +75,17 @@ router.get('/vendor/:vendor_hash?', async function(req, res, next) {
   }
 });
 
+router.get('/sales-item-perks/:vendor_id', async function(req, res, next) {
+  let vendor_id = req.params.vendor_id;
+
+  pool.query("SELECT vendor_sales_item_perks.* FROM `vendor_sales` LEFT JOIN vendor_sales_item_perks ON vendor_sales.id = vendor_sales_item_perks.vendor_sales_id WHERE vendor_sales.vendor_hash = ? AND vendor_sales_item_perks.id IS NOT NULL",
+    [vendor_id]
+  )
+  .then(function(results){
+    res.json( JSON.stringify(results) );
+  });
+});
+
 router.get('/live/clan/online', async function(req, res, next) {
 
   let clan_members_online = {
