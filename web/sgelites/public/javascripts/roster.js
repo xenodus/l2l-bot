@@ -4,35 +4,42 @@ $(document).ready(function(){
 
     data = JSON.parse(data);
 
+    $(".default-filter").append(" ("+data.length+")");
+    $(".last-week").append(" ("+data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') <= 7 }).length+")");
+    $(".two-weeks-ago").append(" ("+data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 7 && moment().diff( moment(member.last_online) , 'days') <= 14 }).length+")");
+    $(".three-weeks-ago").append(" ("+data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 14 && moment().diff( moment(member.last_online) , 'days') <= 21 }).length+")");
+    $(".four-weeks-ago").append(" ("+data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 && moment().diff( moment(member.last_online) , 'days') <= 28 }).length+")");
+    $(".more-than-one-month-ago").append(" ("+data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 28 }).length+")");
+
     var urlParams = new URLSearchParams(window.location.search);
     var last_online = urlParams.get('last_online');
 
     if( last_online ) {
       switch(last_online){
         case "last-week":
-          $(".last-week").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
+          $(".last-week").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("bg-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') <= 7 });
           break;
         case "2-weeks-ago":
-          $(".two-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
+          $(".two-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("bg-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 7 && moment().diff( moment(member.last_online) , 'days') <= 14 });
           break;
         case "3-weeks-ago":
-          $(".three-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
+          $(".three-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("bg-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 14 && moment().diff( moment(member.last_online) , 'days') <= 21 });
           break;
         case "4-weeks-ago":
-          $(".four-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
+          $(".four-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("bg-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 && moment().diff( moment(member.last_online) , 'days') <= 28 });
           break;
         case "more-than-1-month-ago":
-          $(".more-than-one-month-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
+          $(".more-than-one-month-ago").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("bg-warning");
           data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 28 });
           break;
       }
     }
     else {
-      $(".default-filter").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("text-warning");
+      $(".default-filter").append("<i class='fas fa-check ml-1 text-success'></i>").addClass("bg-warning");
     }
 
     $.get("api/characters", function(charData){

@@ -19,7 +19,7 @@ $(document).ready(function(){
     }
 
     if( members_online > 0 ) {
-      $('.status-bar').append("<span><i class='fas fa-circle fa-sm mr-2 text-success'></i>"+members_online+" Members Online</span>").show();
+      $('.status-bar').append("<span><i class='fas fa-circle fa-sm mr-2 text-success'></i>"+members_online+" Member"+(members_online>1?'s':'')+" Online</span>").show();
     }
   });
 });

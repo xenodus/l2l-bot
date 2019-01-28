@@ -425,20 +425,20 @@ $(document).ready(function(){
 
           for(var j=0; j<item_perks.length; j++) {
             if( j == 0 ) {
-              perks += `<div class='mb-1'>Perk `+roll+`</div><div class='mb-2 border border-secondary'>`;
+              perks += `<div class='mb-1'>Perk `+roll+`</div><div class='mb-2 border border-secondary rounded'>`;
             }
             else if( prev_perk_group != item_perks[j].perk_group ) {
               roll++;
-              perks += `</div><div class='mt-1 mb-1'>Perk `+roll+`</div><div class='mb-2 border border-secondary'>`;
+              perks += `</div><div class='mt-1 mb-1'>Perk `+roll+`</div><div class='mb-2 border border-secondary rounded'>`;
             }
 
-            perks += `<div class='d-flex align-items-center p-2 `+(prev_perk_group == item_perks[j].perk_group && j!=0 ? 'border-top border-secondary':'')+`'>
+            perks += `<div class='d-flex align-items-center pt-1 pb-2 pl-2 pr-2 `+(prev_perk_group == item_perks[j].perk_group && j!=0 ? 'border-top border-secondary':'')+`'>
                         <div>
                           <img src='https://bungie.net`+item_perks[j].icon+`' class='mt-1 mb-1 mr-2' style='width: 30px; height: 30px;'/>
                         </div>
                         <div>
                           <div class='font-weight-bold'>`+item_perks[j].name.replace(/"/g, "'")+`</div>
-                          <div class='perk-description'>`+item_perks[j].description.replace(/"/g, "'").replace(/•/g, "<br>• ")+`</div>
+                          <div class='perk-description mt-1'>`+item_perks[j].description.replace(/"/g, "'").replace(/•/g, "<br>• ")+`</div>
                         </div>
                       </div>`;
 
