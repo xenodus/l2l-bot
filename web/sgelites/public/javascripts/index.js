@@ -347,12 +347,12 @@ $(document).ready(function(){
             <div class='mb-1'>
               `+data[i].description.replace(/"/g, "'")+`
             </div>
-            <div class='d-flex align-items-start'>
+            <div class='d-flex align-items-start mt-2'>
               <div>
                 <img src='https://bungie.net`+nightfall_loot[data[i].name].icon+`' class='mt-1 mb-1 mr-2' style='width: 50px; height: 50px;'/>
               </div>
               <div>
-                <div class='text-weight-bold mb-2'>`+nightfall_loot[data[i].name].name+`</div>
+                <div class='text-weight-bold'><h6 class='mb-1'>`+nightfall_loot[data[i].name].name+`</h6></div>
                 <div>`+nightfall_loot[data[i].name].type.replace(/"/g, "'")+`</div>
               </div>
             </div>

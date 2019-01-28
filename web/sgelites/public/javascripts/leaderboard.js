@@ -996,8 +996,11 @@ function gambitDataTable(rows) {
           <th class="text-right">Resets</th>
           <th class="text-right">Kills</th>
           <th class="text-right">Deaths</th>
-          <th class="text-right">Suicides</th>
+          <!--th class="text-right">Suicides</th-->
           <th class="text-right">KD</th>
+          <th class="text-right text-nowrap">Played</th>
+          <th class="text-right text-nowrap">Won</th>
+          <th class="text-right text-nowrap">Win %</th>
           <!--th class="text-right">Efficiency (KAD)</th-->
           <th class="text-right">Invasion Kills</th>
           <th class="text-right">Invaders Killed</th>
@@ -1026,8 +1029,11 @@ function gambitDataTable(rows) {
       <td class="text-right">`+rows[i].infamy_resets+`</td>
       <td class="text-right text-success">`+rows[i].kills.toLocaleString()+`</td>
       <td class="text-right text-danger">`+rows[i].deaths.toLocaleString()+`</td>
-      <td class="text-right text-danger">`+rows[i].suicides.toLocaleString()+`</td>
+      <!--td class="text-right text-danger">`+rows[i].suicides.toLocaleString()+`</td-->
       <td class="text-right">`+rows[i].killsDeathsRatio.toLocaleString()+`</td>
+      <td class="text-right">`+rows[i].activitiesEntered.toLocaleString()+`</td>
+      <td class="text-right text-success">`+rows[i].activitiesWon.toLocaleString()+`</td>
+      <td class="text-right">`+(rows[i].activitiesEntered > 0 ? (rows[i].activitiesWon / rows[i].activitiesEntered * 100).toFixed(2) : 0)+`</td>
       <!--td class="text-right">`+rows[i].efficiency.toLocaleString()+`</td-->
       <td class="text-right text-success">`+rows[i].invasionKills.toLocaleString()+`</td>
       <td class="text-right text-success">`+rows[i].invaderKills.toLocaleString()+`</td>

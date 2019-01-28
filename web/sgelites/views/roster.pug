@@ -8,11 +8,24 @@ block header
   link(rel='stylesheet', href='https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css')
   link(rel='stylesheet', href='https://cdn.datatables.net/fixedheader/3.1.5/css/fixedHeader.bootstrap4.min.css')
 
-  script(src="/javascripts/roster.js?61")
+  script(src="/javascripts/roster.js?77")
 block content
   .row.pb-5
     .col-md-12
       h2.mt-3 Clan Roster
+      div.mb-3
+        small Filter by last online:
+          a(href="/roster").ml-2.default-filter None
+          |,
+          a(href="/roster?last_online=last-week").ml-2.last-week Last Week
+          |,
+          a(href="/roster?last_online=2-weeks-ago").ml-2.two-weeks-ago 2 Weeks Ago
+          |,
+          a(href="/roster?last_online=3-weeks-ago").ml-2.three-weeks-ago 3 Weeks Ago
+          |,
+          a(href="/roster?last_online=4-weeks-ago").ml-2.four-weeks-ago 4 Weeks Ago
+          |,
+          a(href="/roster?last_online=more-than-1-month-ago").ml-2.more-than-one-month-ago > 1 Month Ago
       .roster-container.spinner
 
 

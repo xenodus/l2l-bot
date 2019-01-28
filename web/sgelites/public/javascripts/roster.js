@@ -2,7 +2,42 @@ $(document).ready(function(){
 
   $.get("api/members", function(data){
 
+    data = JSON.parse(data);
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var last_online = urlParams.get('last_online');
+
+    if( last_online ) {
+      switch(last_online){
+        case "last-week":
+          $(".last-week").append("<i class='fas fa-check ml-1 text-success'></i>");
+          data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') <= 7 });
+          break;
+        case "2-weeks-ago":
+          $(".two-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 7 && moment().diff( moment(member.last_online) , 'days') <= 14 });
+          break;
+        case "3-weeks-ago":
+          $(".three-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 14 && moment().diff( moment(member.last_online) , 'days') <= 21 });
+          break;
+        case "4-weeks-ago":
+          $(".four-weeks-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 21 && moment().diff( moment(member.last_online) , 'days') <= 28 });
+          break;
+        case "more-than-1-month-ago":
+          $(".more-than-one-month-ago").append("<i class='fas fa-check ml-1 text-success'></i>");
+          data = data.filter(function(member){ return moment().diff( moment(member.last_online) , 'days') > 28 });
+          break;
+      }
+    }
+    else {
+      $(".default-filter").append("<i class='fas fa-check ml-1 text-success'></i>");
+    }
+
     $.get("api/characters", function(charData){
+
+      charData = JSON.parse(charData);
 
       $('.roster-container').removeClass("spinner").html( rosterDataTable(data, charData) );
       $("#roster_table").addClass("bg-white text-dark");
@@ -30,8 +65,6 @@ $(document).ready(function(){
 });
 
 function rosterDataTable(data, charData) {
-  data = JSON.parse(data);
-  charData = JSON.parse(charData);
 
   if( data.length <= 0 )
     return '';
