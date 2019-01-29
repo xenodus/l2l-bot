@@ -12,7 +12,7 @@ const traveler = new Traveler({
     debug: false
 });
 
-const characterId = '2305843009339205184';
+const characterId = '2305843009342464743';
 const destinyMembershipId = '4611686018474971535';
 const membershipType = 4;
 

@@ -12,7 +12,7 @@ const traveler = new Traveler({
     debug: false
 });
 
-const characterId = '2305843009339205184';
+const characterId = '2305843009342464743';
 const destinyMembershipId = '4611686018474971535';
 const membershipType = 4;
 
@@ -77,7 +77,7 @@ getRefreshToken().then(function(accessToken){
             // Get perks of sales item
             let perks = [];
 
-            if( response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ] ) {
+            if( response.Response.itemComponents[ vendorHash[vendor] ] && response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ] ) {
               if( response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ].sockets.length > 0 ) {
 
                 let sockets = response.Response.itemComponents[ vendorHash[vendor] ].sockets.data[ key ].sockets;
