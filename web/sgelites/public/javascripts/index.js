@@ -71,7 +71,7 @@ $(document).ready(function(){
       curse_level = getCurseLevel();
 
       if( ascendant_challenge.length > 0 && weekly_dc_mission.length > 0  && curse_level.length > 0 ) {
-        $('.left-col').prepend( getVendorStr( ascendant_challenge.concat(weekly_dc_mission).concat(curse_level) , 'Dreaming City') );
+        $('.left-col').prepend( getVendorStr( ascendant_challenge.concat(weekly_dc_mission).concat(curse_level) , 'Dreaming City <small style="font-size: 60%;font-style: italic;"><a href="https://i.imgur.com/LA9TMcS.jpg" target="_blank">Ascendant Challenge Map</a></small>') );
       }
 
       if( gambit_bounties.length > 0 ) {
@@ -80,10 +80,12 @@ $(document).ready(function(){
 
       if( banshee_wares.length > 0 ) {
         $('.mid-col').append( getVendorStr(banshee_wares, 'Banshee-44\'s Mods') );
+        $('.last-updated-info').append(' <div>Bounties & Vendors <i class="fas fa-long-arrow-alt-right"></i> ' + moment(banshee_wares[0].date_added).local().format('D MMM YYYY h:mm A')+'</div>');
       }
 
       if( ada_frames.length > 0 ) {
         $('.mid-col').append( getVendorStr(ada_frames, 'Ada-1\'s Powerful Frames') );
+        $('.last-updated-info').append(' <div>Frames <i class="fas fa-long-arrow-alt-right"></i> ' + moment(ada_frames[0].date_added).local().format('D MMM YYYY h:mm A')+'</div>');
       }
 
       if( spider_powerful_bounty.length > 0 ) {
@@ -97,7 +99,7 @@ $(document).ready(function(){
       escalation_protocol = getEscalationProtocol();
 
       if( escalation_protocol.length > 0  ) {
-        $('.left-col').append( getVendorStr( escalation_protocol, 'Escalation Protocol') );
+        $('.mid-col').append( getVendorStr( escalation_protocol, 'Escalation Protocol') );
       }
 
       if( xur_wares.length > 0 ) {
@@ -121,20 +123,22 @@ $(document).ready(function(){
 
       raid_lair_modifiers = {
         loadouts: {
-          primary: 'Auto Rifle',
-          energy: 'Auto Rifle',
-          power: 'Anything'
+          primary: 'Sidearm',
+          energy: 'Scout Rifle',
+          power: 'Sword'
         },
         modifier: {
-          name: 'Arsenal',
-          description: 'Weapons have no reserve ammo. Emptying the clip of a weapon refills the clips of your holstered weapons.',
-          icon: 'https://bungie.net/common/destiny2_content/icons/5e870c7f571cf35554183a9b330cbf23.png'
+          name: 'Prestige: Gladiator',
+          description: 'Melee kills buff weapon damage, and weapon kills buff melee damage.',
+          icon: 'https://bungie.net/common/destiny2_content/icons/8d4cc5b8420f2a647c877610b9f286ed.png'
         },
-        expiry: moment('2019-01-30 01:00:00', 'YYYY-MM-DD H:mm:ss')
+        expiry: moment('2019-02-06 01:00:00', 'YYYY-MM-DD H:mm:ss'),
+        updated: '2019-01-30 02:00:00'
       };
 
       if( raid_lair_modifiers.expiry.diff() > 0 ) {
         $('.right-col').append( getRaidLairModifiers(raid_lair_modifiers) );
+        $('.last-updated-info').append(' <div>Y1 Raid Lair Modifiers <i class="fas fa-long-arrow-alt-right"></i> ' + moment(raid_lair_modifiers.updated).format('D MMM YYYY h:mm A')+'</div>');
       }
 
       if( tess_wares.length > 0 ) {
@@ -153,7 +157,9 @@ $(document).ready(function(){
     $('.home-vendor-container .row').removeClass('spinner');
 
     if( data.length > 0 ) {
+      console.log( data );
       $('.left-col').prepend( getVendorStr(data, 'Nightfalls') );
+      $('.last-updated-info').append(' <div>Nightfalls <i class="fas fa-long-arrow-alt-right"></i> ' + moment(data[0].date_added).local().format('D MMM YYYY h:mm A')+'</div>');
 
       $('[data-toggle="tooltip"]').tooltip({
         html: true
@@ -490,7 +496,7 @@ $(document).ready(function(){
 
     var str = `
     <div class="mb-3 border-warning border">
-      <div class="border-warning border-bottom p-2">Y1 Prestige Raid Lair Modifiers***</div>
+      <div class="border-warning border-bottom p-2">Y1 Prestige Raid Lair Modifiers</div>
       <div class="pl-2 pr-2 pt-2 pb-1">
         <div class="mb-1 vendor-item">
           <div><u>Loadout</u></div>

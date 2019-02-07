@@ -2,7 +2,7 @@ extends layout
 
 block header
   script(src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js")
-  script(src="/javascripts/index.js?96")
+  script(src="/javascripts/index.js?99")
 
 block content
   .row.bg-transparent.border-bottom.border-warning
@@ -24,8 +24,10 @@ block content
           .col-md-4.mid-col
           .col-md-4.right-col
         .row
-          .col-md-12.text-center
-            small Data indicated with *** are curated manually and may not be accurate post reset
+          .col-md-12.text-left
+            small(style="line-height: 18px;") <u>Data last updated @</u>
+              div.last-updated-info
+              div Dreaming City's and Escalation Protocol's data are up to date 24/7
 
   .row.bg-transparent.border-bottom.border-warning
     .col-md-12

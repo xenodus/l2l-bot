@@ -1,0 +1,58 @@
+.leaderboard-nav a {
+  opacity: 0.5;
+  border-bottom: 1px solid #ffc107!important;
+  margin-left: 10px;
+  border-radius: 0!important;
+  background: rgba(0,0,0,0.5);
+}
+
+.leaderboard-nav a.active,
+.leaderboard-nav a.active:hover,
+.leaderboard-nav a.active:focus {
+  background-color: #ffc107!important;
+  opacity : 1;
+  border-radius: .25rem;
+}
+
+.item .item-title a {
+  color: #ffc107;
+}
+.item .tags {
+  color: #aaa;
+}
+.item .item-tn {
+  position: relative;
+}
+.item .item-tn.video img {
+  opacity: 0.8;
+}
+.item .video::after {
+  font-family: "Font Awesome 5 Brands";
+  content: "\f167";
+  font-weight: 900;
+  position: absolute;
+  left: 42%;
+  top: 45%;
+  font-size: 60px;
+  color: #000;
+  pointer-events: none;
+}
+
+/* Small devices (landscape phones, less than 768px) */
+@media (max-width: 767.98px) {
+  .leaderboard-nav a {
+    margin-left: 0;
+  }
+  ul.leaderboard-nav > li {
+    width: 100%;
+  }
+  ul.leaderboard-nav > li a.active:before {
+    content: "\f0da";
+    font-weight: 900;
+    font-family: "Font Awesome 5 Free";
+    margin-right: 5px;
+  }
+  .item {
+    width: 100%;
+  }
+}

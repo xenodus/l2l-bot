@@ -27,6 +27,10 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'SG-Elites: A Destiny 2 Clan from Singapore' });
 });
 
+router.get('/guides', async function(req, res, next) {
+  res.render('guides', { title: 'Guides' });
+});
+
 router.get('/events', async function(req, res, next) {
   res.render('events', { title: 'Events' });
 });

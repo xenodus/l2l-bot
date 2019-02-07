@@ -1,0 +1,301 @@
+extends layout
+
+block header
+  - var jsHref = '/javascripts/guides.js?' + Date.now();
+  script(src= jsHref)
+
+block content
+  .row
+    .col-md-12.pt-4.pb-4
+
+      .row
+        .col-md-12
+          ul.nav.nav-pills#pills-tab(role="tablist").mb-5.leaderboard-nav.justify-content-end
+            li.nav-item
+              a.nav-link#pills-misc-tab(data-toggle="pill", href="#pills-misc", role="tab" aria-controls="pills-misc" aria-selected="true").text-white Misc
+            li.nav-item
+              a.nav-link.active#pills-wish-tab(data-toggle="pill", href="#pills-wish", role="tab" aria-controls="pills-wish" aria-selected="true").text-white Last Wish
+            li.nav-item
+              a.nav-link#pills-sotp-tab(data-toggle="pill", href="#pills-sotp", role="tab" aria-controls="pills-sotp" aria-selected="true").text-white Scourge of The Past (SoTP)
+            li.nav-item
+              a.nav-link#pills-levi-tab(data-toggle="pill", href="#pills-levi", role="tab" aria-controls="pills-levi" aria-selected="true").text-white Leviathan
+
+      .tab-content#pills-tabContent
+
+        //- Misc
+
+        .tab-pane.fade#pills-misc
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/379677302503768064/499307839710560257/Mods__Cooldowns.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/379677302503768064/499307839710560257/Mods__Cooldowns.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/379677302503768064/499307839710560257/Mods__Cooldowns.png" target="_blank") Mods & Cooldowns
+                div.tags
+                  small #mods
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/443214170041876482/496261220056432640/ShatteredThroneMap.jpg" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/443214170041876482/496261220056432640/ShatteredThroneMap.jpg" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/443214170041876482/496261220056432640/ShatteredThroneMap.jpg" target="_blank") Shattered Throne Encounter 1 Map
+                div.tags
+                  small #shattered-throne #shatteredthrone
+
+        //- Leviathan
+
+        .tab-pane.fade#pills-levi
+
+          .row
+            .col-md-12
+              h4.mb-3 Leviathan
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/402819141603688468/461441562300252180/RbTbtjt.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/402819141603688468/461441562300252180/RbTbtjt.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/402819141603688468/461441562300252180/RbTbtjt.png" target="_blank") Underbelly Map
+                div.tags
+                  small #levi #map #underbelly
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/432336595941720064/509801785326698506/destiny-2-pleasure-gardens-prestige-map.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/432336595941720064/509801785326698506/destiny-2-pleasure-gardens-prestige-map.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/432336595941720064/509801785326698506/destiny-2-pleasure-gardens-prestige-map.png" target="_blank") Pleasure Gardens / Dogs
+                div.tags
+                  small #levi #leviathan #dog #garden
+
+        //- SOTP
+
+        .tab-pane.fade#pills-sotp
+          .row
+            .col-md-12
+              h4.mb-3 Scourge of The Past
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white.video
+                  a(href="https://www.youtube.com/watch?v=YMDqF9YLBtY" target="_blank")
+                    img.img-fluid(src="https://cdn.vox-cdn.com/thumbor/wRFi_4KJqhIDgFs9L0LoCih5s08=/0x0:1920x1080/1200x800/filters:focal(678x238:984x544)/cdn.vox-cdn.com/uploads/chorus_image/image/62684091/D2_PC_Osiris2018_12_10_14h55m01s713.0.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://www.youtube.com/watch?v=YMDqF9YLBtY" target="_blank") SoTP Video Guide
+                div.tags
+                  small #sotp #scourge
+
+          .row
+            .col-md-12
+              h5.mb-3 City - Encounter #1
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/521239792374251530/530390227890602002/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/521239792374251530/530390227890602002/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/521239792374251530/530390227890602002/unknown.png" target="_blank") Encounter 1 Map
+                div.tags
+                  small #sotp #map
+
+          .row
+            .col-md-12
+              h5.mb-3 Sparrow - Encounter #2
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/521239792374251530/525186425847676964/nz8pcS6_d.jpg" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/521239792374251530/525186425847676964/nz8pcS6_d.jpg" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/521239792374251530/525186425847676964/nz8pcS6_d.jpg" target="_blank") Encounter 1 to 2 Sewer Map
+                div.tags
+                  small #sotp #map
+
+          .row
+            .col-md-12
+              h5.mb-3 Vault Access - Encounter #3
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/480757578612342789/527930462685888512/Challenge_2.jpg" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/480757578612342789/527930462685888512/Challenge_2.jpg" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/480757578612342789/527930462685888512/Challenge_2.jpg" target="_blank") Buff Shapes & Names
+                div.tags
+                  small #sotp #callout
+
+          .row
+            .col-md-12
+              h5.mb-3 Insurrection Prime - Encounter #4
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/521239792374251530/523160779948687367/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/521239792374251530/523160779948687367/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/521239792374251530/523160779948687367/unknown.png" target="_blank") Boss Map
+                div.tags
+                  small #sotp #callout
+
+        //- Last Wish
+
+        .tab-pane.fade.show.active#pills-wish
+          .row
+            .col-md-12
+              h4.mb-3 Last Wish
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white.video
+                  a(href="https://www.youtube.com/watch?v=wnmw52xBwE4" target="_blank")
+                    img.img-fluid(src="https://i.ytimg.com/vi/XGz90-MEUH4/maxresdefault.jpg" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://www.youtube.com/watch?v=wnmw52xBwE4" target="_blank") Legit Riven Video Guide
+                div.tags
+                  small #last-wish #riven
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://i.imgur.com/lsLd5LF.jpg" target="_blank")
+                    img.img-fluid(src="https://i.imgur.com/lsLd5LF.jpg" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://i.imgur.com/lsLd5LF.jpg" target="_blank") Wall of Wishes
+                div.tags
+                  small #last-wish #wall
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237469463707649/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/521237469463707649/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237469463707649/unknown.png" target="_blank") Symbols Callout
+                div.tags
+                  small #last-wish #symbol #callout
+
+          .row
+            .col-md-12
+              h5.mb-3 Shuro Chi - Encounter #2
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237600330055680/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/521237600330055680/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237600330055680/unknown.png" target="_blank") Shuro Chi Puzzle Example
+                div.tags
+                  small #last-wish #shuro #shuro-chi
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/505973461508948018/20181028_161602.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/505973461508948018/20181028_161602.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/505973461508948018/20181028_161602.png" target="_blank") Shuro Chi Puzzle Reference 1
+                div.tags
+                  small #last-wish #shuro #shuro-chi
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/505973487375089674/20181028_161721.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/505973487375089674/20181028_161721.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/505973487375089674/20181028_161721.png" target="_blank") Shuro Chi Puzzle Reference 2
+                div.tags
+                  small #last-wish #shuro #shuro-chi
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/505974531614310410/XO4DN5B.jpg" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/505974531614310410/XO4DN5B.jpg" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/505974531614310410/XO4DN5B.jpg" target="_blank") Shuro Chi Puzzle Reference 3
+                div.tags
+                  small #last-wish #shuro #shuro-chi
+
+          .row
+            .col-md-12
+              h5.mb-3 Vault - Encounter #4
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/507142124018335753/529611876926095376/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/507142124018335753/529611876926095376/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/507142124018335753/529611876926095376/unknown.png" target="_blank") Vault Puzzle Example
+                div.tags
+                  small #last-wish #vault
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237693276094464/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/521237693276094464/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237693276094464/unknown.png" target="_blank") Vault Symbols & Example
+                div.tags
+                  small #last-wish #vault
+
+          .row
+            .col-md-12
+              h5.mb-3 Riven - Encounter #5
+
+          .row
+            .col-md-12.d-flex.justify-content-start.align-items-start.flex-wrap
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237913388974080/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/521237913388974080/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521237913388974080/unknown.png" target="_blank") Riven's Eyes
+                div.tags
+                  small #last-wish #riven #eyes
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521238030087094272/unknown.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/521238030087094272/unknown.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521238030087094272/unknown.png" target="_blank") Cluster Rocket Cheese
+                div.tags
+                  small #last-wish #riven-cheese #rocket
+
+              .item.text-center.border-white.border.p-2(style="min-height: 200px; min-width: 200px;").mr-3.mb-3
+                div.item-tn.bg-white
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521238089365192704/yfTBjOa.png" target="_blank")
+                    img.img-fluid(src="https://cdn.discordapp.com/attachments/497309408641155072/521238089365192704/yfTBjOa.png" style="max-height: 200px;")
+                div.mt-1.item-title
+                  a(href="https://cdn.discordapp.com/attachments/497309408641155072/521238089365192704/yfTBjOa.png" target="_blank") Heart Run
+                div.tags
+                  small #last-wish #queenswalk #heartrun
+
+
+block footer
+  - var cssHref = '/stylesheets/guides.css?' + Date.now();
+  link(rel='stylesheet', href= cssHref)
