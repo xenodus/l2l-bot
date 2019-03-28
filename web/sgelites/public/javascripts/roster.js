@@ -84,7 +84,7 @@ function rosterDataTable(data, charData) {
         <tr>
           <th class="no-sort"></th>
           <th class="text-left">Name</th>
-          <th class="text-left">Clan</th>
+          <!--th class="text-left">Clan</th-->
           <th class="text-center">Characters</th>
           <th class="text-left">Last Online</th>
         </tr>
@@ -146,7 +146,7 @@ function rosterDataTable(data, charData) {
     <tr>
       <td>`+(i+1)+`</td>
       <td class="text-left">`+data[i].display_name+`<div class="bnet_id"><small>`+data[i].bnet_id+`</small></div></td>
-      <td class="text-left">`+data[i].clan_no+`</td>
+      <!--td class="text-left">`+data[i].clan_no+`</td-->
       <td class="text-left" data-search="`+dataSortSearchStr+`" data-sort="`+characters.length+`">
         <div class="d-flex justify-content-center">
           `+characterStr+`

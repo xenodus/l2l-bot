@@ -11,7 +11,7 @@ const pushConfig = {
   }
 };
 
-pool.query("SELECT * FROM event WHERE status = ? AND notified = ? AND event_date > NOW() ORDER BY event_date ASC", ['active', 0])
+pool.query("SELECT * FROM event WHERE status = ? AND notified = ? AND event_date > NOW() AND server_id = ? ORDER BY event_date ASC", ['active', 0, '372462137651757066'])
 .then(async function(results){
   if( results.length > 0 ) {
     for( var i=0; i<results.length; i++ ) {

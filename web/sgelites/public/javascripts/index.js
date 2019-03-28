@@ -102,7 +102,7 @@ $(document).ready(function(){
         $('.mid-col').append( getVendorStr( escalation_protocol, 'Escalation Protocol') );
       }
 
-      if( xur_wares.length > 0 ) {
+      if( xur_wares.length > 1 ) {
         $.get('/api/sales-item-perks/' + vendorHash['Xur'], function(data){
           var xur_item_perks = JSON.parse(data);
           $('.right-col').prepend( getXurVendorStr(xur_wares, 'Xur\'s Shinies <small style="font-size: 60%;font-style: italic;"><a href="https://whereisxur.com/" target="_blank">Where is Xur?</a></small>', 'vertical', xur_item_perks) );
@@ -117,28 +117,42 @@ $(document).ready(function(){
         // $('.right-col').append( getVendorStr(saladin_bounties, 'Lord Salad\'s Bounties') );
       }
 
-      // Prestige: Gladiator - "Melee kills buff weapon damage, and weapon kills buff melee damage." - https://bungie.net/common/destiny2_content/icons/8d4cc5b8420f2a647c877610b9f286ed.png
-      // Prestige: Arsenal - "Weapons have no reserve ammo. Emptying the clip of a weapon refills the clips of your holstered weapons." - https://bungie.net/common/destiny2_content/icons/5e870c7f571cf35554183a9b330cbf23.png
-      // Prism - "Attacks matching the periodically rotating focused element do more damage. Other elemental damage is reduced. Incoming damage is unaffected." - https://bungie.net/common/destiny2_content/icons/7cd52fc7131a02c6b03544df779cb8c6.png
-
       raid_lair_modifiers = {
-        loadouts: {
-          primary: 'Sidearm',
-          energy: 'Scout Rifle',
-          power: 'Sword'
+        'Gladiator': {
+          'name': 'Prestige: Gladiator',
+          'description': 'Melee kills buff weapon damage, and weapon kills buff melee damage.',
+          'icon': 'https://bungie.net/common/destiny2_content/icons/8d4cc5b8420f2a647c877610b9f286ed.png'
         },
-        modifier: {
-          name: 'Prestige: Gladiator',
-          description: 'Melee kills buff weapon damage, and weapon kills buff melee damage.',
-          icon: 'https://bungie.net/common/destiny2_content/icons/8d4cc5b8420f2a647c877610b9f286ed.png'
+        'Arsenal': {
+          'name': 'Prestige: Arsenal',
+          'description': 'Weapons have no reserve ammo. Emptying the clip of a weapon refills the clips of your holstered weapons.',
+          'icon': 'https://bungie.net/common/destiny2_content/icons/5e870c7f571cf35554183a9b330cbf23.png'
         },
-        expiry: moment('2019-02-06 01:00:00', 'YYYY-MM-DD H:mm:ss'),
-        updated: '2019-01-30 02:00:00'
+        'Prism': {
+          'name': 'Prism',
+          'description': 'Attacks matching the periodically rotating focused element do more damage. Other elemental damage is reduced. Incoming damage is unaffected.',
+          'icon': 'https://bungie.net/common/destiny2_content/icons/7cd52fc7131a02c6b03544df779cb8c6.png'
+        }
       };
 
-      if( raid_lair_modifiers.expiry.diff() > 0 ) {
-        $('.right-col').append( getRaidLairModifiers(raid_lair_modifiers) );
-        $('.last-updated-info').append(' <div>Y1 Raid Lair Modifiers <i class="fas fa-long-arrow-alt-right"></i> ' + moment(raid_lair_modifiers.updated).format('D MMM YYYY h:mm A')+'</div>');
+      current_raid_lair_modifiers = {
+        loadouts: {
+          primary: 'SMG',
+          energy: 'Anything',
+          power: 'Grenade Launcher'
+        },
+        modifier: {
+          name: raid_lair_modifiers['Prism'].name,
+          description: raid_lair_modifiers['Prism'].description,
+          icon: raid_lair_modifiers['Prism'].icon
+        },
+        expiry: moment('2019-02-13 01:00:00', 'YYYY-MM-DD H:mm:ss'),
+        updated: '2019-02-07 02:00:00'
+      };
+
+      if( current_raid_lair_modifiers.expiry.diff() > 0 ) {
+        $('.right-col').append( getRaidLairModifiers(current_raid_lair_modifiers) );
+        $('.last-updated-info').append(' <div>Y1 Raid Lair Modifiers <i class="fas fa-long-arrow-alt-right"></i> ' + moment(current_raid_lair_modifiers.updated).format('D MMM YYYY h:mm A')+'</div>');
       }
 
       if( tess_wares.length > 0 ) {

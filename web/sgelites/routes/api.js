@@ -1,5 +1,6 @@
 const config = require('../../../config').production;
 const pool = config.getPool();
+const discordPool = config.getDiscordPool();
 const moment = require("moment");
 
 var express = require('express');
@@ -40,7 +41,7 @@ router.get('/events', function(req, res, next) {
   ORDER BY event.event_date ASC, event.event_id  DESC
   `;
 
-  pool.query(sql, [serverID])
+  discordPool.query(sql, [serverID])
   .then(function(results){
     res.json( JSON.stringify(results) );
   })

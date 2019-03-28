@@ -1,3 +1,6 @@
+let sgeServerID = '372462137651757066';
+let happyMealServerID = '480757578612342784';
+
 /******************************
   Prod / Dev
 *******************************/
@@ -24,8 +27,6 @@ const eventDatetimeFormats = [
 
 let isAdmin = false;
 let maxConfirmed = 6;
-let sgeServerID = '372462137651757066';
-let happyMealServerID = '480757578612342784';
 let raids = {
   'Levi': [],
   'PLevi': [],
@@ -41,8 +42,8 @@ let raids = {
 *******************************/
 
 const channelCategoryName = "Looking for Group";
-const channelName = "raid_newbies_signup"; // no spaces all lower case
-const eventChannelName = "raid_lfg"; // no spaces all lower case
+const channelName = "🚩raid_newbie_signup"; // no spaces all lower case
+const eventChannelName = "🚩raid_lfg"; // no spaces all lower case
 let channel;
 let eventChannel;
 let serverID; // also known as guild id
