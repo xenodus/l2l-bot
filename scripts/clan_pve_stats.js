@@ -114,9 +114,9 @@ async function getClanMembers() {
 
         no++;
         console.log( timestampPrefix() + no + " of " + members.length + " clan members' info retrieved" );
-      }
-    }
-  });
+      } // endfor
+    } // endif
+  }); // end if
 
 	return clanMembersInfo;
 }

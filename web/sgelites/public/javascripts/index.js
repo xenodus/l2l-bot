@@ -48,6 +48,8 @@ $(document).ready(function(){
 
       gambit_bounties = data.filter(function(item){ return item.vendor_hash == vendorHash['The Drifter'] && gambitBountiesFilter.includes(item.itemTypeDisplayName) });
 
+      power_surge_bounties = data.filter(function(item){ return item.vendor_hash == vendorHash['The Drifter'] && item.itemTypeDisplayName == 'Power Surge Bounty' });
+
       spider_wares = data.filter(function(item){ return item.vendor_hash == vendorHash['Spider'] && item.itemTypeDisplayName == '' });
 
       spider_powerful_bounty = data.filter(function(item){ return item.vendor_hash == vendorHash['Spider'] && item.itemTypeDisplayName == 'Weekly Bounty' && spiderRareBounty.includes(item.name) });
@@ -78,15 +80,23 @@ $(document).ready(function(){
         $('.left-col').append( getVendorStr(gambit_bounties, 'Gambit Bounties') );
       }
 
+      outbreak_config = getOutbreakSinge();
+
+      if( outbreak_config.length > 0  ) {
+        $('.mid-col').append( getVendorStr( outbreak_config, 'Outbreak Catalyst <small style="font-size: 60%;font-style: italic;"><a href="http://ensemblefc.com/cryptarchlocks.php" target="_blank">Solution Generator <i class="fas fa-external-link-alt"></i></a></small>') );
+      }
+
       if( banshee_wares.length > 0 ) {
         $('.mid-col').append( getVendorStr(banshee_wares, 'Banshee-44\'s Mods') );
         $('.last-updated-info').append(' <div>Bounties & Vendors <i class="fas fa-long-arrow-alt-right"></i> ' + moment(banshee_wares[0].date_added).local().format('D MMM YYYY h:mm A')+'</div>');
       }
 
+      /*
       if( ada_frames.length > 0 ) {
         $('.mid-col').append( getVendorStr(ada_frames, 'Ada-1\'s Powerful Frames') );
         $('.last-updated-info').append(' <div>Frames <i class="fas fa-long-arrow-alt-right"></i> ' + moment(ada_frames[0].date_added).local().format('D MMM YYYY h:mm A')+'</div>');
       }
+      */
 
       if( spider_powerful_bounty.length > 0 ) {
         $('.mid-col').append( getVendorStr(spider_powerful_bounty, 'Spider\'s Powerful Bounty') );
@@ -105,7 +115,7 @@ $(document).ready(function(){
       if( xur_wares.length > 1 ) {
         $.get('/api/sales-item-perks/' + vendorHash['Xur'], function(data){
           var xur_item_perks = JSON.parse(data);
-          $('.right-col').prepend( getXurVendorStr(xur_wares, 'Xur\'s Shinies <small style="font-size: 60%;font-style: italic;"><a href="https://whereisxur.com/" target="_blank">Where is Xur?</a></small>', 'vertical', xur_item_perks) );
+          $('.right-col').prepend( getXurVendorStr(xur_wares, 'Xur\'s Shinies <small style="font-size: 60%;font-style: italic;"><a href="https://whereisxur.com/" target="_blank">Where is Xur? <i class="fas fa-external-link-alt"></i></a></small>', 'vertical', xur_item_perks) );
 
           $('[data-toggle="tooltip"]').tooltip({
             html: true
@@ -159,6 +169,10 @@ $(document).ready(function(){
         $('.right-col').append( getVendorStr(tess_wares, 'Tess\'s Precious') );
       }
 
+      if( power_surge_bounties.length > 0 ) {
+        $('.right-col').append( getVendorStr(power_surge_bounties, 'Power Surge Bounties') );
+      }
+
       $('[data-toggle="tooltip"]').tooltip({
         html: true
       });
@@ -171,7 +185,7 @@ $(document).ready(function(){
     $('.home-vendor-container .row').removeClass('spinner');
 
     if( data.length > 0 ) {
-      console.log( data );
+      // console.log( data );
       $('.left-col').prepend( getVendorStr(data, 'Nightfalls') );
       $('.last-updated-info').append(' <div>Nightfalls <i class="fas fa-long-arrow-alt-right"></i> ' + moment(data[0].date_added).local().format('D MMM YYYY h:mm A')+'</div>');
 
@@ -668,6 +682,47 @@ $(document).ready(function(){
       name: 'Mission: ' + Object.keys(weeklyDCMission)[index],
       icon: '/common/destiny2_content/icons/a6ce21a766375f5bcfb6cc01b093a383.png',
       description: weeklyDCMission[ Object.keys(weeklyDCMission)[index] ]
+    }];
+  }
+
+  function getOutbreakSinge() {
+
+    var outbreakSinge = [
+      'Void',
+      'Arc',
+      'Solar'
+    ];
+
+    var startDate = moment('2019-05-07 01:00:00', 'YYYY-MM-DD H:mm:ss');
+    var currDate = moment();
+    // var currDate = moment('2019-05-01 05:55:55', 'YYYY-MM-DD H:mm:ss');
+
+    var index = 0;
+    var found = false;
+
+    while(found == false) {
+
+      if( index == Object.keys(outbreakSinge).length ) {
+        index = 0;
+      }
+
+      nextWeek = moment( startDate.format('YYYY-MM-DD H:mm:ss'), 'YYYY-MM-DD H:mm:ss' ).add(7, 'days');
+
+      if( currDate.isBetween(startDate, nextWeek) ) {
+        found = true;
+      }
+      else {
+        startDate = nextWeek;
+        index++;
+      }
+    }
+
+    var description = 'The configuration type is <u>' + outbreakSinge[index].toUpperCase() + '</u> for Zero Hour (Heroic).';
+
+    return [{
+      name: 'Singe Config: ' + outbreakSinge[index].toUpperCase(),
+      icon: '/common/destiny2_content/icons/c013e41cdb32779bc2322337614ea06b.jpg',
+      description: description
     }];
   }
 
